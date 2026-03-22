@@ -6,6 +6,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import { routes } from "./routes/index";
+import { errorHandler } from "./middlewares/errror.middleware";
 
 const app: Application = express();
 
@@ -17,5 +18,8 @@ app.use(express.json());
 
 // Get routes
 routes(app);
+
+// Error handler
+app.use(errorHandler);
 
 export default app;

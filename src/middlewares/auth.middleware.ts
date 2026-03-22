@@ -1,35 +1,34 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from 'jsonwebtoken';
-
-// interface for add property user to request
-export interface AuthRequest extends Request {
-    user?: any;
-}
+import { JWTPayload, AuthRequest } from "../types/auth.types";
+import { env } from "../config/env";
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+
     // Get token from header request
-    const authHeader = req.headers['authorization'];
+    const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
 
     // If token not found
     if (!token) {
-        return res.status(401).json({
-            message: "Akses di tolak, token tidak ditemukan"
-        })
+        const error: any = new Error("Akses ditolak, token tidak ditemukan");
+        error.status = 401;
+        throw error;
     }
 
     try {
-    // verify token with env jwt secret
-    const verified = jwt.verify(token, process.env.JWT_SECRET as string);
+    // Casting JWT payload to know user data
+    const verified = jwt.verify(token, env.JWT_SECRET) as JWTPayload;
 
     // save user data to request
     req.user = verified;
 
     // next to controller
     next();
+
     } catch (error: any) {
-        res.status(403).json({
-            message: "Token tidak valid atau sudah kadaluarsa", error: error.message
-        })
+        const error: any = new Error("Token tidak valid atau sudah kadaluarsa");
+        error.status = 403;
+        throw error;
     }
 }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// type for register schema
 export const registerSchema = z.object({
     email: z.string().email("Format E-mail tidak valid"),
     username: z.string().min(5, "Username minimal 5 karakter"),
@@ -11,7 +12,14 @@ export const registerSchema = z.object({
     })
 });
 
+// export type for register schema
+export type RegisterInput = z.infer<typeof registerSchema>;
+
+// type for login schema
 export const loginSchema = z.object({
     username: z.string().min(1, "Username harus diisi"),
     password: z.string().min(1, "Password harus diisi"),
 })
+
+// export type for login schema
+export type LoginInput = z.infer<typeof loginSchema>;
