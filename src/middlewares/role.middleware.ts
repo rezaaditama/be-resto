@@ -6,7 +6,7 @@ export const authorizeRole = (allowRoles: string[]) => {
         if (!req.user || !allowRoles.includes(req.user?.role)) {
             const error: any = new Error(`Akses ditolak. Role ${req.user?.role || "Unknown"} tidak diizinkan`);
             error.status = 403;
-            throw error;
+            return next(error);
         }
         next();
     }

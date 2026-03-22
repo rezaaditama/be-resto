@@ -27,6 +27,7 @@ export const createStaffService = async (data: RegisterInput) => {
     return await prisma.staff.create({
         data: {
             ...data,
+            date_of_birth: new Date(data.date_of_birth),
             password: hashedPassword,
             role: data.role.toUpperCase() as any
         }
@@ -43,7 +44,7 @@ export const loginStaffService = async (data: LoginInput) => {
 
     // validate username and password
     if (!user || !(await bcrypt.compare(data.password, user.password))) {
-        const error: any = new Error("Username atau email sudah terdaftar");
+        const error: any = new Error("Username atau password salah!");
         error.status = 401;
         throw error;
     }

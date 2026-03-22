@@ -8,7 +8,7 @@ const envSchema = z.object({
     PORT: z.string().default("3000"),
     DATABASE_URL: z.string().url("DATABASE_URL harus berupa URL yang valid"),
     JWT_SECRET: z.string().min(5, "JWT_SECRET minimal 5 karakter"),
-    NOTE_ENV: z.enum(["development", "test", "production"]).default("development")
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development")
 });
 
 // parse env

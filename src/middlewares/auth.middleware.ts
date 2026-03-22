@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import jwt from 'jsonwebtoken';
 import { JWTPayload, AuthRequest } from "../types/auth.types";
 import { env } from "../config/env";
@@ -13,7 +13,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     if (!token) {
         const error: any = new Error("Akses ditolak, token tidak ditemukan");
         error.status = 401;
-        throw error;
+        return next(error);
     }
 
     try {
@@ -26,9 +26,9 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     // next to controller
     next();
 
-    } catch (error: any) {
+    } catch (err: any) {
         const error: any = new Error("Token tidak valid atau sudah kadaluarsa");
         error.status = 403;
-        throw error;
+        return next(error);
     }
 }
