@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { createCategorySchema } from "src/schemas/category.schemas";
+import { createCategorySchema } from "../../schemas/category.schemas";
 import { createCategoryService } from "./category.service";
-import { responseSuccess } from "src/utils/response";
-import { asyncHandler } from "src/utils/asyncHandler";
+import { responseSuccess } from "../../utils/response";
+import { asyncHandler } from "../../utils/asyncHandler";
 
 
 export const addCategoryController = asyncHandler(async (req: Request, res: Response) => {
