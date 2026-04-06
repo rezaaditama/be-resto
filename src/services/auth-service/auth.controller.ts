@@ -52,7 +52,6 @@ export const registerCustomerController = asyncHandler(async (req: Request, res:
     // Response success
     return responseSuccess(res, "Register berhasil, silahkan cek email untuk verifikasi kode OTP", {
         userId: result.user.id,
-        otpCode: result.otpCode
     });
 });
 

@@ -3,6 +3,7 @@ import { LoginInput, RegisterCustomerInput, VerifyOtpInput } from "../../schemas
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env } from "../../config/env";
+import { sendOtpEmail } from "../../utils/sendEmail";
 
 // Service for login user
 export const loginUserService = async (data: LoginInput) => {
@@ -78,9 +79,16 @@ export const registerCustomerService = async (data: RegisterCustomerInput) => {
             otp_expired_at: otpExpiredAt,
             is_active: false
         }
-    })
+    });
 
-    return {user: newUser, otpCode};
+    // send OTP code to user email
+    try {
+        await sendOtpEmail(newUser.email, newUser.fullname, otpCode)
+    } catch (err) {
+        console.error("Email error: ", err)
+    }
+    
+    return {user: newUser}
 };
 
 // service for verify OTP
