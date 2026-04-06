@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { loginStaff } from "../services/auth-service/auth.controller";
-import { registerStaff } from "../services/auth-service/register.controller";
+import { loginUserController, registerCustomerController, verifyOtpController } from "../services/auth-service/auth.controller";
 
 const AuthRouter = Router();
 
-AuthRouter.post("/login", loginStaff);
-AuthRouter.post("/register", registerStaff);
+AuthRouter.post("/register", registerCustomerController)
+AuthRouter.post("/login", loginUserController);
+AuthRouter.post("/verify-otp", verifyOtpController);
 
 export default AuthRouter;

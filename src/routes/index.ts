@@ -1,10 +1,8 @@
 import { Application, Router } from "express"
 import AuthRouter from "./auth.route";
-import CategoryRouter from "./category.route";
 
 const _routes: Array<[string, Router]> = [
-    ["/auth", AuthRouter],
-    ["/category", CategoryRouter]
+    ["/auth", AuthRouter]
 ]
 
 export const routes = (app: Application) => {

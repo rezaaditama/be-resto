@@ -1,25 +1,29 @@
 import { z } from "zod";
 
-// type for register schema
-export const registerSchema = z.object({
-    email: z.string().trim().email("Format E-mail tidak valid"),
-    username: z.string().trim().min(5, "Username minimal 5 karakter").regex(/^\S+$/, "Username tidak boleh mengandung spasi"),
-    password: z.string().min(8, "Password minimal 8 karakter").regex(/^\S+$/, "Password tidak boleh mengandung spasi"),
-    fullname: z.string().trim().min(1, "Nama lengkap harus diisi"),
-    date_of_birth: z.string().refine((date) => !isNaN(Date.parse(date)), {message: "Format tanggal lahir tidak valid (yyyy-mm-dd)",}).transform((date) => new Date(date)),
-    role: z.enum(["ADMIN", "CASHIER", "WAITER", "KIOSK_SYSTEM"], {
-        message: "Role harus salah satu dari ADMIN, CASHIER, WAITER, atau KIOSK_SYSTEM"
-    })
-});
-
-// export type for register schema
-export type RegisterInput = z.infer<typeof registerSchema>;
-
 // type for login schema
 export const loginSchema = z.object({
-    username: z.string().min(1, "Username harus diisi"),
+    email: z.string().trim().email("Format E-mail tidak valid"),
     password: z.string().min(1, "Password harus diisi"),
 })
 
+// type for register schema
+export const registerCustomerSchema = z.object({
+    email: z.string().trim().email("Format E-mail tidak valid"),
+    password: z.string().min(8, "Password minimal 8 karakter").regex(/[a-zA-Z]/, "Password harus mengandung setidaknya satu huruf")
+        .regex(/[0-9]/, "Password harus mengandung setidaknya satu angka"),
+    fullname: z.string().min(1, "Nama lengkap harus diisi"),
+    phone_number: z.string().min(1, "Nomor telepon harus diisi").regex(/^[0-9]+$/, "Nomor telepon harus terdiri dari angka")
+})
+
+// type for OTP schemas
+export const verifyOtpSchema = z.object({
+    email: z.string().trim().email("Format email tidak valid"),
+    otpCode: z.number().min(100000, "Kode OTP harus berisi 6 digit").max(999999, "Kode OTP harus berisi 6 digit")
+})
+
+// Export type for verify OTP schema
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>
+// Export type for register schema
+export type RegisterCustomerInput = z.infer<typeof registerCustomerSchema>
 // export type for login schema
 export type LoginInput = z.infer<typeof loginSchema>;
