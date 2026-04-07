@@ -1,8 +1,10 @@
 import { Response, NextFunction } from "express";
+import { AppError } from "../utils/appError";
 import jwt from 'jsonwebtoken';
 import { JWTPayload, AuthRequest } from "../types/auth.types";
 import { env } from "../config/env";
 
+// Middleware to authenticate JWT token
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
 
     // Get token from header request
@@ -11,10 +13,8 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
     // If token not found
     if (!token) {
-        const error: any = new Error("Akses ditolak, token tidak ditemukan");
-        error.status = 401;
-        return next(error);
-    }
+        return next(new AppError("Akses ditolak, token tidak ditemukan", 401));
+    };
 
     try {
     // Casting JWT payload to know user data
@@ -27,8 +27,7 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     next();
 
     } catch (err: any) {
-        const error: any = new Error("Token tidak valid atau sudah kadaluarsa");
-        error.status = 403;
-        return next(error);
-    }
-}
+        // if token invalid or expired
+        return next(new AppError("Token tidak valid atau sudah kadaluarsa", 403));
+    };
+};

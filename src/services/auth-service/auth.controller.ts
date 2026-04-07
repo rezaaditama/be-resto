@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
+import { AppError } from "../../utils/appError";
 import { loginSchema, registerCustomerSchema, verifyOtpSchema } from "../../schemas/auth.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { loginUserService, registerCustomerService, verifyOtpService } from "./auth.service";
+import { loginUserService, registerCustomerService, verifyCodeOtpService } from "./auth.service";
 import { responseSuccess } from "../../utils/response";
 
 // Controller user login
@@ -12,10 +13,7 @@ export const loginUserController = asyncHandler(async (req: Request, res: Respon
 
     // If validation failed
     if (!inputValidation.success) {
-        const error: any = new Error("Validasi gagal");
-        error.status = 400;
-        error.errors = inputValidation.error.flatten().fieldErrors;
-        throw error;
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
     }
 
     // login service
@@ -24,11 +22,7 @@ export const loginUserController = asyncHandler(async (req: Request, res: Respon
     // response success
     return responseSuccess(res, "Login berhasil", {
         token: result.token,
-        user: {
-            id: result.user.id,
-            fullname: result.user.fullname,
-            role: result.user.role
-        }
+        user: result.user
     });
 });
 
@@ -40,19 +34,14 @@ export const registerCustomerController = asyncHandler(async (req: Request, res:
 
     // If validation failed
     if (!inputValidation.success) {
-        const error: any = new Error("Validasi gagal");
-        error.status = 400;
-        error.errors = inputValidation.error.flatten().fieldErrors;
-        throw error;
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
     }
 
     // Register customer service
     const result = await registerCustomerService(inputValidation.data);
 
     // Response success
-    return responseSuccess(res, "Register berhasil, silahkan cek email untuk verifikasi kode OTP", {
-        userId: result.user.id,
-    });
+    return responseSuccess(res, result.message, {email: result.email});
 });
 
 // Controller verify OTP
@@ -63,15 +52,12 @@ export const verifyOtpController = asyncHandler(async (req: Request, res: Respon
 
     // If validation failed
     if (!inputValidation.success) {
-        const error: any = new Error("Validasi gagal");
-        error.status = 400;
-        error.errors = inputValidation.error.flatten().fieldErrors;
-        throw error;
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
     }
 
     // verify OTP service
-    const result = await verifyOtpService(inputValidation.data);
+    const result = await verifyCodeOtpService(inputValidation.data);
 
     // Response success
     responseSuccess(res, result.message);
-})
+});
