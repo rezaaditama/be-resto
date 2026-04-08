@@ -85,6 +85,7 @@ CREATE TABLE "staff" (
     "email" VARCHAR(100) NOT NULL,
     "password" VARCHAR(255) NOT NULL,
     "fullname" VARCHAR(100) NOT NULL,
+    "phone_number" VARCHAR(20),
     "role" "role" NOT NULL,
     "gender" "gender_option",
     "date_of_birth" DATE,
