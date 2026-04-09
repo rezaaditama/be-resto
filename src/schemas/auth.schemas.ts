@@ -6,7 +6,7 @@ export const loginSchema = z.object({
     password: z.string().min(1, "Password harus diisi"),
 })
 
-// type for register schema
+// type for register schema ditambah confirm_password
 export const registerCustomerSchema = z.object({
     email: z.string().trim().email("Format E-mail tidak valid"),
     password: z.string().min(8, "Password minimal 8 karakter").regex(/[a-zA-Z]/, "Password harus mengandung setidaknya satu huruf")
