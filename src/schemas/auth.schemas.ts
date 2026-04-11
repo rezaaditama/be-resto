@@ -1,3 +1,4 @@
+import { gender_option } from "../../generated/prisma";
 import { z } from "zod";
 
 // type for login schema
@@ -67,6 +68,18 @@ export const resetPasswordSchema = z.object({
     path: ["confirmPassword"], // Error akan muncul di field confirmPassword
 });
 
+// Schema untuk update profil & alamat
+export const updateProfileSchema = z.object({
+    gender: z.nativeEnum(gender_option, { message: "Gender tidak valid" }).optional(),
+    date_of_birth: z.string().optional(), // Frontend mengirimkan YYYY-MM-DD
+    addresses: z.array(
+        z.object({
+            id: z.string().uuid("Format ID alamat tidak valid").optional(), // Ada ID = Update, Tidak ada = Create
+            address_name: z.string().min(1, "Alamat tidak boleh kosong")
+        })
+    ).optional()
+});
+
 // Export type for verify OTP schema
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>
 // export type for resenf OTP schema
@@ -83,3 +96,5 @@ export type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema>;
 export type VerifyResetOtpInput = z.infer<typeof verifyResetOtpSchema>;
 // export type for reset password schema
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+// export type for update profile schema
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
