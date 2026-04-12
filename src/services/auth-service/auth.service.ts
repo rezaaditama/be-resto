@@ -1,4 +1,4 @@
-import { LoginInput, RegisterCustomerInput, RegisterStaffInput, ResetPasswordInput, VerifyOtpInput, VerifyResetOtpInput } from "../../schemas/auth.schemas";
+import { LoginInput, RegisterCustomerInput, RegisterStaffInput, ResetPasswordInput, UpdateProfileInput, VerifyOtpInput, VerifyResetOtpInput } from "../../schemas/auth.schemas";
 import prisma from "../../lib/prisma"
 import bcrypt from "bcrypt";
 import { env } from "../../config/env";
@@ -315,4 +315,55 @@ export const resetPasswordService = async (userId: string, data: ResetPasswordIn
     });
 
     return { message: "Kata sandi berhasil diperbarui" };
+};
+
+export const completeCustomerProfileService = async (customerId: string, data: UpdateProfileInput) => {
+    
+    // memastikan customer ada
+    const customer = await prisma.customers.findUnique({
+        where: { id: customerId }
+    });
+
+    if (!customer) {
+        throw new AppError("Customer tidak ditemukan", 404);
+    }
+
+    // menyiapkan payload update untuk tabel customer
+    const updatePayload: any = {};
+
+    if (data.gender) updatePayload.gender = data.gender;
+    if (data.date_of_birth) updatePayload.date_of_birth = new Date(data.date_of_birth);
+
+    // membuat Logika Prisma Nested Writes untuk tabel address
+    if (data.addresses && data.addresses.length > 0) {
+        // Filter alamat yang TIDAK punya ID (berarti alamat baru)
+        const addressesToCreate = data.addresses
+            .filter(addr => !addr.id)
+            .map(addr => ({ address_name: addr.address_name }));
+
+        // Filter alamat yang PUNYA ID (berarti update alamat lama)
+        const addressesToUpdate = data.addresses
+            .filter(addr => addr.id)
+            .map(addr => ({
+                where: { id: addr.id },
+                data: { address_name: addr.address_name }
+            }));
+
+        // Masukkan ke payload update
+        updatePayload.address = {
+            ...(addressesToCreate.length > 0 && { create: addressesToCreate }),
+            ...(addressesToUpdate.length > 0 && { update: addressesToUpdate })
+        };
+    }
+
+    // Eksekusi ke database
+    const updatedCustomer = await prisma.customers.update({
+        where: { id: customerId },
+        data: updatePayload,
+        include: {
+            address: true
+        }
+    });
+
+    return updatedCustomer;
 };
