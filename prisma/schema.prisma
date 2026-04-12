@@ -11,6 +11,7 @@ datasource db {
 model menus {
   id           String        @id(map: "menu_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String        @db.VarChar(50)
+  category     category      @default(FOOD)
   price        Decimal       @db.Decimal(12, 2)
   description  String?
   image_path   String?       @db.VarChar(255)
