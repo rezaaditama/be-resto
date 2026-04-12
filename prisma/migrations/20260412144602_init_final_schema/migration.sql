@@ -49,6 +49,7 @@ CREATE TABLE "orders" (
     "table_id" INTEGER,
     "staff_id" UUID,
     "customer_id" UUID,
+    "address_id" UUID,
     "discount_id" INTEGER,
     "taxes_id" INTEGER,
     "source" "order_source" NOT NULL,
@@ -186,6 +187,9 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_staff_id_fkey" FOREIGN KEY ("staff_i
 
 -- AddForeignKey
 ALTER TABLE "orders" ADD CONSTRAINT "orders_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE "orders" ADD CONSTRAINT "orders_address_id_fkey" FOREIGN KEY ("address_id") REFERENCES "address"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "orders" ADD CONSTRAINT "orders_table_id_fkey" FOREIGN KEY ("table_id") REFERENCES "tables"("id") ON DELETE SET NULL ON UPDATE NO ACTION;

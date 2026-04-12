@@ -230,7 +230,7 @@ export const registerStaffService = async (data: RegisterStaffInput) => {
             fullname: data.fullname,
             role: data.role,
             gender: data.gender,
-            // phone_number: data.phone_number,
+            phone_number: data.phone_number,
             is_active: true
         }
     });
