@@ -13,6 +13,7 @@ model menus {
   name         String        @db.VarChar(50)
   price        Decimal       @db.Decimal(12, 2)
   description  String?
+  category     category
   image_path   String?       @db.VarChar(255)
   stock        Int?          @default(0)
   is_available Boolean?      @default(true)
@@ -39,6 +40,7 @@ model orders {
   customer_id        String?       @db.Uuid
   discount_id        Int?
   taxes_id           Int?
+  address_id         String?       @db.Uuid
   source             order_source
   status             order_status
   // keuangan
@@ -59,6 +61,7 @@ model orders {
   table              tables?       @relation(fields: [table_id], references: [id], onUpdate: NoAction)
   discount           discount?     @relation(fields: [discount_id], references: [id])
   taxes              taxes?        @relation(fields: [taxes_id], references: [id])
+  address            address?      @relation(fields: [address_id], references: [id], onUpdate: NoAction)
   order_items        order_items[]
   payments           payments[]
 }
@@ -112,6 +115,7 @@ model address {
   created_at   DateTime   @default(now()) @db.Timestamp(6)
   updated_at   DateTime?  @updatedAt @db.Timestamp(6)
   customers    customers? @relation(fields: [customer_id], references: [id])
+  orders       orders[]
 }
 
 model tables {
