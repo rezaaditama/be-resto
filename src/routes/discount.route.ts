@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { 
-  createDiscountController, 
-  getAllDiscountsController, 
-  updateDiscountController, 
-  deleteDiscountController 
+    createDiscountController, 
+    getAllDiscountsController,
+    updateDiscountController, 
+    deleteDiscountController
 } from '../services/discount-service/discount.controller';
 
-const router = Router();
+const DiscountRouter = Router();
 
-router.post('/', createDiscountController);
-router.get('/', getAllDiscountsController);
-router.put('/:id', updateDiscountController);
-router.delete('/:id', deleteDiscountController);
+DiscountRouter.get('/discounts', getAllDiscountsController);
+DiscountRouter.post('/create-discounts', createDiscountController);
+DiscountRouter.put('/update-discounts/:id', updateDiscountController);
+DiscountRouter.delete('/delete-discounts/:id', deleteDiscountController);
 
-export default router;
+export default DiscountRouter;
