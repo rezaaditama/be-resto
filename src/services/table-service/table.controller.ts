@@ -19,7 +19,7 @@ export const createTableController = asyncHandler(async (req: AuthRequest, res: 
     // Proteksi Role
     // pastikan user sudah login dan role nya adalah Admin
     if (req.user!.role !== "CASHIER") {
-        throw new AppError("Akses ditolak, hanya ADMIN yang dapat  menambahkan data meja", 403);
+        throw new AppError("Akses ditolak, hanya CASHIER yang dapat menambahkan data meja", 403);
     }
 
     // panggil service
@@ -75,7 +75,7 @@ export const deleteTableController = asyncHandler(async (req: AuthRequest, res: 
 
     // Proteksi Role (Sangat penting untuk fitur hapus)
     if (req.user!.role !== "CASHIER") {
-        throw new AppError("Akses ditolak, hanya ADMIN yang dapat menghapus data meja", 403);
+        throw new AppError("Akses ditolak, hanya CASHIER  yang dapat menghapus data meja", 403);
     }
 
     // Panggil service
