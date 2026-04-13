@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
-    const statusCode = err.status || 500;
+    const statusCode = err.statusCode || 500;
     const message = err.message || "Terjadi kesalahan pada server";
 
     console.error(`Error : ${message}`);
@@ -11,5 +11,5 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
         success: false,
         message: statusCode === 500 ? "Terjadi kesalahan pada server" : message,
         errors: err.errors || null,
-    })
-}
+    });
+};
