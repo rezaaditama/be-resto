@@ -48,7 +48,7 @@ export const sendOtpEmail = async (
                     <span style="font-size: 32px; font-weight: bold; color: #2980b9;">${otp}</span>
                 </div>
                 
-                <p style="font-size: 16px; color: #34495e;">Kode ini akan berlaku selama <strong>${isForgot ? '10 menit' : '5 menit'}</strong>.</p>
+                <p style="font-size: 16px; color: #34495e;">Kode ini akan berlaku selama <strong>2 menit</strong>.</p>
                 
                 <p style="font-size: 16px; color: #34495e;">Jika Anda tidak merasa melakukan permintaan ini, abaikan email ini.</p>
                 

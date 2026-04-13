@@ -80,7 +80,7 @@ export const registerCustomerService = async (data: RegisterCustomerInput) => {
     const otpCode = Math.floor(100000 + Math.random() * 900000);
 
     // generate otp expired_at
-    const otpExpiredAt = new Date(Date.now() + 5 * 60 * 1000);
+    const otpExpiredAt = new Date(Date.now() + 2 * 60 * 1000);
 
     // Create customer
     const newCustomer = await prisma.customers.create({
@@ -167,8 +167,8 @@ export const resendOtpService = async (data: { email: string }) => {
 
     // membatasi waktu pengiriman otp ulang selama 1 menit
     if (user.otp_expired_at) {
-        // Hitung kapan OTP terakhir dibuat (asumsi expired 5 menit, maka dibuat 5 menit sebelum expired)
-        const lastSent = new Date(user.otp_expired_at.getTime() - 5 * 60 * 1000);
+        // Hitung kapan OTP terakhir dibuat (asumsi expired 2 menit, maka dibuat 2 menit sebelum expired)
+        const lastSent = new Date(user.otp_expired_at.getTime() - 2 * 60 * 1000);
         const now = new Date();
         const diffInSeconds = Math.floor((now.getTime() - lastSent.getTime()) / 1000);
 
@@ -180,7 +180,7 @@ export const resendOtpService = async (data: { email: string }) => {
 
     // 3. Generate OTP baru (6 digit)
     const newOtpCode = Math.floor(100000 + Math.random() * 900000);
-    const newOtpExpiredAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
+    const newOtpExpiredAt = new Date(Date.now() + 2 * 60 * 1000); // 5 menit
 
     // 4. Update di database
     await prisma.customers.update({
