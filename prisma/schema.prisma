@@ -108,13 +108,17 @@ model customers {
 }
 
 model address {
-  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  customer_id  String?    @db.Uuid
-  address_name String     @db.VarChar(255)
-  created_at   DateTime   @default(now()) @db.Timestamp(6)
-  updated_at   DateTime?  @updatedAt @db.Timestamp(6)
-  customers    customers? @relation(fields: [customer_id], references: [id])
-  orders       orders[]
+  id              String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  customer_id     String?    @db.Uuid
+  address_name    String     @db.VarChar(255)
+  latitude        Float?
+  longitude       Float?
+  is_core_address Boolean?   @default(false)
+  mark_as         String?
+  created_at      DateTime   @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?  @updatedAt @db.Timestamp(6)
+  customers       customers? @relation(fields: [customer_id], references: [id])
+  orders          orders[]
 }
 
 model tables {
