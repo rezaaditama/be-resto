@@ -60,7 +60,25 @@ export const createMenuService = async (data: createMenuInput) => {
 
     // if menu already exist
     if (existingMenu) {
-        throw new AppError(`Menu dengan nama ${data.name} sudah ada`, 409)
-    }
+        throw new AppError(`Menu dengan nama ${data.name} sudah ada`, 409);
+    };
 
-}
+    // set is_available based on stock
+    const isAvailable = data.stock > 0;
+
+    // create menu
+    const newMenu = await prisma.menus.create({
+        data: {
+            name: data.name,
+            price: data.price,
+            description: data.description,
+            category: data.category,
+            stock: data.stock,
+            image_path: data.image_path,
+            is_available: isAvailable
+        }
+    });
+
+    // return data menu
+    return newMenu;
+};

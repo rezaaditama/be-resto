@@ -15,7 +15,7 @@ export const registerCustomerSchema = z.object({
     confirm_password: z.string(),
     fullname: z.string().min(1, "Nama lengkap harus diisi"),
     phone_number: z.string().min(1, "Nomor telepon harus diisi").regex(/^[0-9]+$/, "Nomor telepon harus terdiri dari angka")
-}).refine((data) => data.password === data.password, {
+}).refine((data) => data.password === data.confirm_password, {
     message: "Konfirmasi kata sandi tidak cocok",
     path: ["confirm_password"], // Error akan muncul di field confirmPassword
 });

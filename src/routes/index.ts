@@ -2,11 +2,13 @@ import { Application, Router } from "express"
 import AuthRouter from "./auth.route";
 import TableRouter from "./table.route";
 import TaxesRouter from "./taxes.route";
+import MenuRouter from "./menu.route";
 
 const _routes: Array<[string, Router]> = [
     ["/auth", AuthRouter],
     ["/table", TableRouter],
-    ["/taxes", TaxesRouter]
+    ["/taxes", TaxesRouter],
+    ["/menu", MenuRouter]
 ]
 
 export const routes = (app: Application) => {

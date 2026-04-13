@@ -12,7 +12,7 @@ export const createMenuSchema = z.object({
     price: z.coerce.number().min(0, "Harga tidak boleh negatif"),
     description: z.string().min(1, "Deskripsi menu harus diisi"),
     category: z.enum(["FOOD", "DRINK"], {error: "Kategori menu harus FOOD atau DRINK"}),
-    stock: z.number().min(0, "Stock tidak boleh negatif").default(0),
+    stock: z.coerce.number().min(0, "Stock tidak boleh negatif").default(0),
     image_path: z.string().min(1, "Gambar menu harus diisi")
 });
 
