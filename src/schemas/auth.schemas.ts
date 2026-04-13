@@ -46,7 +46,7 @@ export const registerStaffSchema = z.object({
     role: RoleStaffEnum,
     gender: GenderEnum,
     phone_number: z.string().min(1, "Nomor telepon harus diisi").regex(/^[0-9]+$/, "Nomor telepon harus terdiri dari angka")
-})
+});
 
 // Schema untuk meminta OTP (Hanya butuh email)
 export const forgotPasswordSchema = z.object({

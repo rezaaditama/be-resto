@@ -6,13 +6,14 @@ export const getMenuFilterSchema = z.object({
     search: z.string().optional()
 })
 
+// type for create menu schema
 export const createMenuSchema = z.object({
     name: z.string().min(1, "Nama menu harus diisi"),
-    price: z.number().min(0, "Harga tidak boleh negatif"),
+    price: z.coerce.number().min(0, "Harga tidak boleh negatif"),
     description: z.string().min(1, "Deskripsi menu harus diisi"),
     category: z.enum(["FOOD", "DRINK"], {error: "Kategori menu harus FOOD atau DRINK"}),
     stock: z.number().min(0, "Stock tidak boleh negatif").default(0),
-    is_available: z.boolean().default(false)
+    image_path: z.string().min(1, "Gambar menu harus diisi")
 });
 
 // export type for get menu filter schema
