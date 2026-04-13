@@ -3,12 +3,14 @@ import AuthRouter from "./auth.route";
 import TableRouter from "./table.route";
 import TaxesRouter from "./taxes.route";
 import MenuRouter from "./menu.route";
+import DiscountRouter from './discount.route';
 
 const _routes: Array<[string, Router]> = [
     ["/auth", AuthRouter],
     ["/table", TableRouter],
     ["/taxes", TaxesRouter],
-    ["/menu", MenuRouter]
+    ["/menu", MenuRouter],
+    ["/discount", DiscountRouter]
 ]
 
 export const routes = (app: Application) => {
