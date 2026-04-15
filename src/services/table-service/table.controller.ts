@@ -17,9 +17,9 @@ export const createTableController = asyncHandler(async (req: AuthRequest, res: 
     }
 
     // Proteksi Role
-    // pastikan user sudah login dan role nya adalah Admin
+    // pastikan user sudah login dan role nya adalah cashier
     if (req.user!.role !== "CASHIER") {
-        throw new AppError("Akses ditolak, hanya ADMIN yang dapat  menambahkan data meja", 403);
+        throw new AppError("Akses ditolak, hanya CASHIER yang dapat menambahkan data meja", 403);
     }
 
     // panggil service
@@ -56,6 +56,11 @@ export const updateTableController = asyncHandler(async (req: AuthRequest, res: 
         throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
     }
 
+    // validasi role yang bisa update data table
+    if (req.user!.role !== "CASHIER" && req.user!.role !== "WAITER") {
+        throw new AppError("Akses ditolak, hanya CASHIER dan WAITER yang dapat mengupdate data meja", 403);
+    }
+
     // Panggil service
     const result = await updateTableService(tableId, inputValidation.data);
 
@@ -75,7 +80,7 @@ export const deleteTableController = asyncHandler(async (req: AuthRequest, res: 
 
     // Proteksi Role (Sangat penting untuk fitur hapus)
     if (req.user!.role !== "CASHIER") {
-        throw new AppError("Akses ditolak, hanya ADMIN yang dapat menghapus data meja", 403);
+        throw new AppError("Akses ditolak, hanya CASHIER  yang dapat menghapus data meja", 403);
     }
 
     // Panggil service

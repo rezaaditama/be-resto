@@ -6,6 +6,6 @@ import { createMenuController, getAllMenuController } from "../services/menu/men
 const MenuRouter = Router();
 
 MenuRouter.get("/", getAllMenuController)
-MenuRouter.post("/create-menu", authenticateToken, authorizeRole(["ADMIN"]), createMenuController);
+MenuRouter.post("/create-menu", authenticateToken, authorizeRole(["CASHIER"]), createMenuController);
 
 export default MenuRouter;

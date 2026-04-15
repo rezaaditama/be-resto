@@ -22,6 +22,7 @@ CREATE TABLE "menus" (
     "name" VARCHAR(50) NOT NULL,
     "price" DECIMAL(12,2) NOT NULL,
     "description" TEXT,
+    "category" "category" NOT NULL,
     "image_path" VARCHAR(255),
     "stock" INTEGER DEFAULT 0,
     "is_available" BOOLEAN DEFAULT true,
@@ -52,6 +53,7 @@ CREATE TABLE "orders" (
     "address_id" UUID,
     "discount_id" INTEGER,
     "taxes_id" INTEGER,
+    "address_id" UUID,
     "source" "order_source" NOT NULL,
     "status" "order_status" NOT NULL,
     "total_amount" DECIMAL(12,2) NOT NULL,
@@ -86,10 +88,7 @@ CREATE TABLE "staff" (
     "email" VARCHAR(100) NOT NULL,
     "password" VARCHAR(255) NOT NULL,
     "fullname" VARCHAR(100) NOT NULL,
-<<<<<<<< HEAD:prisma/migrations/20260406150411_migrate_revisi_after_present/migration.sql
-========
     "phone_number" VARCHAR(20),
->>>>>>>> main:prisma/migrations/20260408105700_add_phone_number_to_staff_table/migration.sql
     "role" "role" NOT NULL,
     "gender" "gender_option",
     "date_of_birth" DATE,
@@ -110,11 +109,7 @@ CREATE TABLE "customers" (
     "otp_code" INTEGER,
     "gender" "gender_option",
     "date_of_birth" DATE,
-<<<<<<<< HEAD:prisma/migrations/20260406150411_migrate_revisi_after_present/migration.sql
-    "is_active" BOOLEAN DEFAULT true,
-========
     "is_validate" BOOLEAN DEFAULT false,
->>>>>>>> main:prisma/migrations/20260408105700_add_phone_number_to_staff_table/migration.sql
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6),
     "otp_validated_at" TIMESTAMP(6),
@@ -152,6 +147,7 @@ CREATE TABLE "discount" (
     "discount_code" VARCHAR(10) NOT NULL,
     "description" TEXT,
     "value" DECIMAL(12,2) NOT NULL,
+    "min_purches" DECIMAL(12,2),
     "is_active" BOOLEAN DEFAULT true,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6),
@@ -206,6 +202,9 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_discount_id_fkey" FOREIGN KEY ("disc
 
 -- AddForeignKey
 ALTER TABLE "orders" ADD CONSTRAINT "orders_taxes_id_fkey" FOREIGN KEY ("taxes_id") REFERENCES "taxes"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "orders" ADD CONSTRAINT "orders_address_id_fkey" FOREIGN KEY ("address_id") REFERENCES "address"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "payments" ADD CONSTRAINT "payments_orders_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
