@@ -3,7 +3,7 @@ import prisma from "../../lib/prisma";
 import { AppError } from "../../utils/appError";
 
 // Get all menu service
-export const getAllMenuService = async (filters?: {category?: "FOOD" | "DRINK", search?: string}) => {
+export const getAllMenuService = async (filters?: {category?: "FOOD" | "DRINK", search?: string, is_available?: boolean}) => {
 
     // Get data from menus table
     const menus = await prisma.menus.findMany({
@@ -18,7 +18,10 @@ export const getAllMenuService = async (filters?: {category?: "FOOD" | "DRINK", 
             name: {
                 contains: filters?.search ? filters.search : undefined,
                 mode: "insensitive"
-            }
+            },
+
+            // filter by availability
+            is_available: filters?.is_available !== undefined ? filters.is_available : undefined
         },
 
         // filtering data from table menus
@@ -38,7 +41,8 @@ export const getAllMenuService = async (filters?: {category?: "FOOD" | "DRINK", 
             image_path: true,
             category: true,
             is_available: true,
-            description: true
+            description: true,
+            stock: true
         }
     });
 
@@ -81,4 +85,28 @@ export const createMenuService = async (data: createMenuInput) => {
 
     // return data menu
     return newMenu;
+};
+
+export const getMenuByIdService = async (id: string) => {
+
+    // Get menu by id from table menu
+    const menu = await prisma.menus.findUnique({
+        where: {id: id},
+        select: {
+            id: true,
+            name: true,
+            description: true,
+            stock: true,
+            is_available: true,
+            price: true,
+            image_path: true,
+        }
+    });
+
+    // if menu not found
+    if (!menu) {
+        throw new AppError("Menu tidak ditemukan", 404)
+    };
+
+    return menu;
 };

@@ -1,10 +1,11 @@
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Request, Response } from "express";
-import { createMenuService, getAllMenuService } from "./menu.service";
+import { createMenuService, getAllMenuService, getMenuByIdService } from "./menu.service";
 import { responseSuccess } from "../../utils/response";
-import { createMenuSchema, getMenuFilterSchema } from "../../schemas/menu.schemas";
+import { createMenuSchema, getMenuByIdSchema, getMenuFilterSchema } from "../../schemas/menu.schemas";
 import { AuthRequest } from "../../types/auth.types";
 import { AppError } from "../../utils/appError";
+import fs from "fs";
 
 export const getAllMenuController = asyncHandler(async (req: Request, res: Response) => {
     
@@ -21,17 +22,46 @@ export const getAllMenuController = asyncHandler(async (req: Request, res: Respo
 // Create new menu controller
 export const createMenuController = asyncHandler(async (req: AuthRequest, res: Response) => {
 
+    // check if image is uploaded
+    if (!req.file) {
+        throw new AppError("Gambar menu harus diunggah", 400);
+    }
+
+    // normalize image path
+    const normalizedPath = req.file.path.replace(/\\/g, "/");
+
     // input validation by zod
     const inputValidation = createMenuSchema.safeParse(req.body);
 
-    // if input validation failed
+    // if input validation failed delete image and throw error
     if (!inputValidation.success) {
+        if (fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+    }
         throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
     }
 
     // create menu service
-    const result = await createMenuService(inputValidation.data);
+    const result = await createMenuService({...inputValidation.data, image_path: normalizedPath});
 
     // response success
     return responseSuccess(res, "Menu berhasil ditambahkan", result, 201);
+});
+
+// Get menu by id controller
+export const getMenuByIdController = asyncHandler(async (req: Request, res: Response) => {
+
+    // get id from params
+    const {id} = getMenuByIdSchema.parse(req.params);
+
+    // validation failed
+    if (!id) {
+        throw new AppError("Validasi gagal", 400);
+    };
+
+    // get menu by id service
+    const result = await getMenuByIdService(id);
+
+    // response success
+    return responseSuccess(res, "Berhasil mendapatkan data menu berdasarkan id", result);
 });
