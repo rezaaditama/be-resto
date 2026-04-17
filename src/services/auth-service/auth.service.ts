@@ -333,20 +333,35 @@ export const completeCustomerProfileService = async (customerId: string, data: U
 
     if (data.gender) updatePayload.gender = data.gender;
     if (data.date_of_birth) updatePayload.date_of_birth = new Date(data.date_of_birth);
+    if (data.fullname) updatePayload.fullname = data.fullname;
+    if (data.phone_number) updatePayload.phone_number = data.phone_number;
+    
 
     // membuat Logika Prisma Nested Writes untuk tabel address
     if (data.addresses && data.addresses.length > 0) {
         // Filter alamat yang TIDAK punya ID (berarti alamat baru)
         const addressesToCreate = data.addresses
             .filter(addr => !addr.id)
-            .map(addr => ({ address_name: addr.address_name }));
+            .map(addr => ({ 
+                address_name: addr.address_name,
+                latitude: addr.latitude,
+                longitude: addr.longitude,
+                mark_as: addr.mark_as,
+                is_core_address: addr.is_core_address 
+            }));
 
         // Filter alamat yang PUNYA ID (berarti update alamat lama)
         const addressesToUpdate = data.addresses
             .filter(addr => addr.id)
             .map(addr => ({
                 where: { id: addr.id },
-                data: { address_name: addr.address_name }
+                data: { 
+                    address_name: addr.address_name,
+                    latitude: addr.latitude,
+                    longitude: addr.longitude,
+                    mark_as: addr.mark_as,
+                    is_core_address: addr.is_core_address 
+                }
             }));
 
         // Masukkan ke payload update

@@ -159,11 +159,6 @@ export const updateProfileController = asyncHandler(async (req: AuthRequest, res
 
     // 2. Ambil user ID dari middleware authenticateToken
     const userId = req.user!.id; 
-    
-    // Opsional: Validasi agar hanya role CUSTOMER yang bisa melengkapi profil ini
-    if (req.user!.role !== "CUSTOMER") {
-        throw new AppError("Akses ditolak, hanya customer yang dapat melengkapi profil", 403);
-    }
 
     // 3. Panggil service
     const result = await completeCustomerProfileService(userId, inputValidation.data);
