@@ -1,4 +1,4 @@
-import { createMenuInput } from "../../schemas/menu.schemas";
+import { createMenuInput, updateMenuInput } from "../../schemas/menu.schemas";
 import prisma from "../../lib/prisma";
 import { AppError } from "../../utils/appError";
 
@@ -87,6 +87,7 @@ export const createMenuService = async (data: createMenuInput) => {
     return newMenu;
 };
 
+// get menu by id service
 export const getMenuByIdService = async (id: string) => {
 
     // Get menu by id from table menu
@@ -110,3 +111,54 @@ export const getMenuByIdService = async (id: string) => {
 
     return menu;
 };
+
+// update menu service
+export const updateMenuService = async (id: string, data: updateMenuInput) => {
+
+    // check if menu exist
+    const existingMenu = await prisma.menus.findUnique({
+        where: {id: id}
+    });
+
+    // if menu not found
+    if (!existingMenu) {
+        throw new AppError("Menu tidak ditemukan", 404);
+    };
+
+    // check if menu name already exist
+    if (data.name && data.name.toLowerCase() !== existingMenu.name.toLowerCase()) {
+        
+        // check name from table menu
+        const duplicateName = await prisma.menus.findFirst({
+            where: {
+                name: {
+                    equals: data.name,
+                    mode: "insensitive"
+                },
+                id: {
+                    not: id
+                }
+            }
+        });
+
+        // if menu name already exist
+        if (duplicateName) {
+            throw new AppError(`Menu dengan nama ${data.name} sudah ada`, 409);
+        };
+    };
+
+        // check stock
+        const currentStock = data.stock !== undefined ? data.stock : existingMenu.stock;
+
+        // set is_available based on stock
+        const isAvailable = currentStock !== null ? currentStock > 0 : false;
+
+        // update menu
+        return await prisma.menus.update({
+            where: {id: id},
+            data: {
+                ...data,
+                is_available: isAvailable
+            }
+        });
+    };

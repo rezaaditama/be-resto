@@ -26,6 +26,17 @@ export const getMenuByIdSchema = z.object({
     id: z.string().uuid("Format ID tidak valid")
 });
 
+// type for update menu by id schema
+export const updateMenuSchema = z.object({
+    name: z.string().min(1, "Nama menu harus diisi").optional(),
+    price: z.coerce.number().min(0, "Harga tidak boleh negatif").optional(),
+    description: z.string().min(1, "Deskripsi menu harus diisi").optional(),
+    category: z.enum(["FOOD", "DRINK"], {error: "Kategori harus berisi FOOD atau DRINK"}).optional(),
+    stock: z.coerce.number().min(0, "Stock tidak boleh negatif").optional()
+});
+
+// export type for update menu by id schema
+export type updateMenuInput = z.infer<typeof updateMenuSchema>;
 
 // export type for get menu by id schema
 export type GetMenuByIdInput = z.infer<typeof getMenuByIdSchema>;

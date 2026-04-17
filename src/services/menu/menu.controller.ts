@@ -1,8 +1,8 @@
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Request, Response } from "express";
-import { createMenuService, getAllMenuService, getMenuByIdService } from "./menu.service";
+import { createMenuService, getAllMenuService, getMenuByIdService, updateMenuService } from "./menu.service";
 import { responseSuccess } from "../../utils/response";
-import { createMenuSchema, getMenuByIdSchema, getMenuFilterSchema } from "../../schemas/menu.schemas";
+import { createMenuSchema, getMenuByIdSchema, getMenuFilterSchema, updateMenuSchema } from "../../schemas/menu.schemas";
 import { AuthRequest } from "../../types/auth.types";
 import { AppError } from "../../utils/appError";
 import fs from "fs";
@@ -64,4 +64,23 @@ export const getMenuByIdController = asyncHandler(async (req: Request, res: Resp
 
     // response success
     return responseSuccess(res, "Berhasil mendapatkan data menu berdasarkan id", result);
+});
+
+// Update menu controller
+export const updateMenuController = asyncHandler(async (req: Request, res: Response) => {
+
+    // validate id from params
+    const { id } = getMenuByIdSchema.parse(req.params);
+
+    const inputValidation = updateMenuSchema.safeParse(req.body);
+
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    };
+
+    // update stock service
+    const result = await updateMenuService(id, inputValidation.data);
+
+    // return response success
+    return responseSuccess(res, "Menu berhasil di perbarui", result)
 });
