@@ -12,16 +12,16 @@ export const getAllMenuService = async (filters?: {category?: "FOOD" | "DRINK", 
         where: {
 
             // filter by category
-            category: filters?.category ? filters.category : undefined,
+            category: filters?.category,
         
             // filter by search
             name: {
-                contains: filters?.search ? filters.search : undefined,
+                contains: filters?.search,
                 mode: "insensitive"
             },
 
             // filter by availability
-            is_available: filters?.is_available !== undefined ? filters.is_available : undefined
+            is_available: filters?.is_available
         },
 
         // filtering data from table menus

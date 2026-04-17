@@ -3,7 +3,7 @@ import z from "zod"
 // type for get menu filter category and search schema
 export const getMenuFilterSchema = z.object({
     category: z.enum(["FOOD", "DRINK"]).optional(),
-    search: z.string().optional(),
+    search: z.string().trim().optional(),
     is_available: z.preprocess((val) => {
         if (val === "true") return true;
         if (val === "false") return false;
@@ -23,7 +23,7 @@ export const createMenuSchema = z.object({
 
 // type for get menu by id schema
 export const getMenuByIdSchema = z.object({
-    id: z.string().uuid("Format ID tidak valid").min(1, "ID tidak boleh kosong")
+    id: z.string().uuid("Format ID tidak valid")
 });
 
 
