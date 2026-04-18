@@ -47,7 +47,7 @@ services:
     networks:
       - resto-networks
 
-  # network for connect all container
-  networks:
-    resto-networks:
-      driver: bridge
+# network for connect all container
+networks:
+  resto-networks:
+    driver: bridge
