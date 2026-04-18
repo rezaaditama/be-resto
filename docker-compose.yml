@@ -4,6 +4,7 @@ services:
 db-resto:
     image: postgres:15-alpine
     container_name: db_resto
+    restart: always
 
     # environment for database
     environment:
