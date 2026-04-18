@@ -7,9 +7,9 @@ db-resto:
 
     # environment for database
     environment:
-        POSTGRES_USER: resto
-        POSTGRES_PASSWORD: team_a
-        POSTGRES_DB: db_resto
+      POSTGRES_USER: resto
+      POSTGRES_PASSWORD: team_a
+      POSTGRES_DB: db_resto
     
     # volume for save data if container stop
     volumes: 
@@ -21,7 +21,7 @@ db-resto:
 
     # network for connect database
     networks:
-    - resto-networks
+      - resto-networks
 
 # service backend
 api-resto:
