@@ -1,0 +1,54 @@
+services:
+
+# service database postgresql
+db-resto:
+    image: postgres:15-alpine
+    container_name: db_resto
+
+    # environment for database
+    environment:
+        POSTGRES_USER: resto
+        POSTGRES_PASSWORD: team_a
+        POSTGRES_DB: db_resto
+    
+    # volume for save data if container stop
+    volumes: 
+      - ./postgres_data:/var/lib/postgresql/data
+
+    # port for access database (running on 5432) (external 5433)
+    ports:
+      - "5433:5432"
+
+    # network for connect database
+    networks:
+    - resto-networks
+
+# service backend
+api-resto:
+  build: .
+  container_name: be-its-resto
+
+  # restart always if container stop
+  restart: always
+
+  # port for access backend (running on 3000) (external 3001)
+  ports:
+    - "3001:3000" 
+  
+  # environment for backend
+  env_file:
+    - .env
+
+  # wait for database is ready before start backend
+  depends_on:
+    - db-resto
+
+  # network for connect backend
+  networks:
+    - resto-networks
+
+# network for connect all container
+networks:
+  resto-networks:
+    driver: bridge
+  
