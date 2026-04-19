@@ -161,7 +161,7 @@ export const resendOtpService = async (data: { email: string }) => {
     }
 
     // 2. Jika sudah diverifikasi, tidak perlu kirim OTP lagi
-    if (user.is_validate) {
+    if (user.is_validated) {
         throw new AppError("Akun ini sudah terverifikasi, silakan login", 400);
     }
 
