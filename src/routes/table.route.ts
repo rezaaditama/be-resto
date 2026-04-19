@@ -5,7 +5,7 @@ import { authorizeRole } from "../middlewares/role.middleware";
 
 const TableRouter = Router();
 
-TableRouter.get("/tables", authenticateToken, getAllTablesControler);
+TableRouter.get("/", authenticateToken, getAllTablesControler);
 TableRouter.post("/create-tables", authenticateToken, authorizeRole(["CASHIER"]), createTableController);
 TableRouter.put("/update-tables/:id", authenticateToken, authorizeRole(["CASHIER", "WAITER"]), updateTableController);
 TableRouter.delete("/delete-tables/:id", authenticateToken, authorizeRole(["CASHIER"]), deleteTableController);

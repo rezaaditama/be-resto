@@ -1,9 +1,8 @@
-
 import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
-import { forgotPasswordSchema, loginSchema, registerCustomerSchema, registerStaffSchema, resendOtpSchema, resetPasswordSchema, updateProfileSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
+import { forgotPasswordSchema, loginSchema, registerCustomerSchema, registerStaffSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { completeCustomerProfileService, forgotPasswordService, loginUserService, logoutUserService, registerCustomerService, registerStaffService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
+import { forgotPasswordService, loginUserService, logoutUserService, registerCustomerService, registerStaffService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
 import { responseSuccess } from "../../utils/response";
 import { AuthRequest } from "src/types/auth.types";
 
@@ -145,24 +144,4 @@ export const resetPasswordController = asyncHandler(async (req: AuthRequest, res
     const result = await resetPasswordService(userId, inputValidation.data);
 
     return responseSuccess(res, result.message);
-});
-
-export const updateProfileController = asyncHandler(async (req: AuthRequest, res: Response) => {
-    
-    // 1. Validasi input menggunakan Zod
-    const inputValidation = updateProfileSchema.safeParse(req.body);
-
-    // Jika validasi gagal, lempar AppError (persis dengan kodemu sebelumnya)
-    if (!inputValidation.success) {
-        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
-    }
-
-    // 2. Ambil user ID dari middleware authenticateToken
-    const userId = req.user!.id; 
-
-    // 3. Panggil service
-    const result = await completeCustomerProfileService(userId, inputValidation.data);
-
-    // 4. Kirim response menggunakan utility responseSuccess
-    return responseSuccess(res, "Profil dan alamat berhasil diperbarui", result);
 });
