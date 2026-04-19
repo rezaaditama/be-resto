@@ -47,6 +47,16 @@ services:
     networks:
       - resto-networks
 
+  fe-its-resto:
+    build:
+      context: ../frontend
+      args:
+        - VITE_API_URL=http://103.158.196.32/its-resto/api
+    container_name: fe-its-resto
+    restart: always
+    networks:
+      - resto-networks
+
   # Service nginx gateway (port 8080)
   nginx-gateway:
     image: nginx:alpine
