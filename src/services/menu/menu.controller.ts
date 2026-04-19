@@ -1,6 +1,6 @@
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Request, Response } from "express";
-import { createMenuService, getAllMenuService, getMenuByIdService, updateMenuService } from "./menu.service";
+import { createMenuService, deleteMenuService, getAllMenuService, getMenuByIdService, updateMenuService } from "./menu.service";
 import { responseSuccess } from "../../utils/response";
 import { createMenuSchema, getMenuByIdSchema, getMenuFilterSchema, updateMenuSchema } from "../../schemas/menu.schemas";
 import { AuthRequest } from "../../types/auth.types";
@@ -83,4 +83,16 @@ export const updateMenuController = asyncHandler(async (req: Request, res: Respo
 
     // return response success
     return responseSuccess(res, "Menu berhasil di perbarui", result)
+});
+
+export const deleteMenuController = asyncHandler(async (req: Request, res: Response) => {
+
+    // validate id from params
+    const { id } = getMenuByIdSchema.parse(req.params);
+
+    // delete menu service
+    const result = await deleteMenuService(id);
+
+    // response success
+    return responseSuccess(res, "Menu berhasil di hapus", result);
 });

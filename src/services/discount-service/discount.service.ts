@@ -4,8 +4,11 @@ export const createDiscount = async (data: any) => {
   return await prisma.discount.create({
     data: {
       discount_code: data.discount_code,
-      description: data.description,
+      discount_name: data.discount_name,
       value: data.value,
+      min_purches: data.min_purches,
+      start_date: data.start_date,
+      end_date: data.end_date,
       is_active: data.is_active,
     },
   });

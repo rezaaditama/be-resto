@@ -11,6 +11,9 @@ export const getAllMenuService = async (filters?: {category?: "FOOD" | "DRINK", 
         // filtering data (optional)
         where: {
 
+            // filter by deleted_at
+            deleted_at: null,
+
             // filter by category
             category: filters?.category,
         
@@ -58,7 +61,8 @@ export const createMenuService = async (data: createMenuInput) => {
             name: {
                 equals: data.name,
                 mode: "insensitive"
-            }
+            },
+            deleted_at: null
         }
     });
 
@@ -92,7 +96,10 @@ export const getMenuByIdService = async (id: string) => {
 
     // Get menu by id from table menu
     const menu = await prisma.menus.findUnique({
-        where: {id: id},
+        where: {
+            id: id,
+            deleted_at: null
+        },
         select: {
             id: true,
             name: true,
@@ -117,7 +124,10 @@ export const updateMenuService = async (id: string, data: updateMenuInput) => {
 
     // check if menu exist
     const existingMenu = await prisma.menus.findUnique({
-        where: {id: id}
+        where: {
+            id: id,
+            deleted_at: null
+        }
     });
 
     // if menu not found
@@ -137,7 +147,8 @@ export const updateMenuService = async (id: string, data: updateMenuInput) => {
                 },
                 id: {
                     not: id
-                }
+                },
+                deleted_at: null
             }
         });
 
@@ -147,18 +158,46 @@ export const updateMenuService = async (id: string, data: updateMenuInput) => {
         };
     };
 
-        // check stock
-        const currentStock = data.stock !== undefined ? data.stock : existingMenu.stock;
+    // check stock
+    const currentStock = data.stock !== undefined ? data.stock : existingMenu.stock;
 
-        // set is_available based on stock
-        const isAvailable = currentStock !== null ? currentStock > 0 : false;
+    // set is_available based on stock
+    const isAvailable = currentStock !== null ? currentStock > 0 : false;
 
-        // update menu
-        return await prisma.menus.update({
-            where: {id: id},
-            data: {
-                ...data,
-                is_available: isAvailable
-            }
-        });
+    // update menu
+    return await prisma.menus.update({
+        where: {id: id},
+        data: {
+            ...data,
+            is_available: isAvailable
+        }
+    });
+};
+
+// delete menu service
+export const deleteMenuService = async (id: string) => {
+
+    const existingMenu = await prisma.menus.findFirst({
+
+        // check if menu already deleted
+        where: {
+            id: id,
+            deleted_at: null
+        }
+    });
+
+    // if menu not found
+    if (!existingMenu) {
+        throw new AppError("Menu tidak ditemukan atau sudah dihapus", 404);
     };
+
+    // delete menu
+    return await prisma.menus.update({
+        where: {id: id},
+        data: {
+            deleted_at: new Date(),
+            is_available: false,
+            stock: 0
+        }
+    });
+};
