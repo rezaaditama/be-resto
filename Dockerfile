@@ -17,8 +17,8 @@ RUN npm install
 # copy all file project
 COPY . .
 
-# generate prisma client
-RUN npx prisma generate
+#  inject DUMMY DATABASE_URL
+RUN DATABASE_URL="postgresql://dummy..." npx prisma generate
 
 #  build project
 RUN npm run build
