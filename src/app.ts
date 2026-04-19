@@ -5,6 +5,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { routes } from "./routes/index";
 import { errorHandler } from "./middlewares/error.middleware";
+import path from "path";
 
 const app: Application = express();
 
@@ -13,6 +14,7 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // Get routes
 routes(app);
