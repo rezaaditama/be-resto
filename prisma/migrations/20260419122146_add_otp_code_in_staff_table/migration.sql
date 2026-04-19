@@ -28,6 +28,7 @@ CREATE TABLE "menus" (
     "is_available" BOOLEAN DEFAULT true,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6),
+    "deleted_at" TIMESTAMP(6),
 
     CONSTRAINT "menu_pkey" PRIMARY KEY ("id")
 );
@@ -88,12 +89,15 @@ CREATE TABLE "staff" (
     "password" VARCHAR(255) NOT NULL,
     "fullname" VARCHAR(100) NOT NULL,
     "phone_number" VARCHAR(20),
+    "otp_code" INTEGER,
     "role" "role" NOT NULL,
     "gender" "gender_option",
     "date_of_birth" DATE,
     "is_active" BOOLEAN DEFAULT true,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6),
+    "otp_validated_at" TIMESTAMP(6),
+    "otp_expired_at" TIMESTAMP(6),
 
     CONSTRAINT "staff_pkey" PRIMARY KEY ("id")
 );
@@ -128,7 +132,6 @@ CREATE TABLE "address" (
     "mark_as" TEXT,
     "created_at" TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(6),
-    "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "address_pkey" PRIMARY KEY ("id")
 );
@@ -224,7 +227,7 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_table_id_fkey" FOREIGN KEY ("table_i
 ALTER TABLE "orders" ADD CONSTRAINT "orders_address_id_fkey" FOREIGN KEY ("address_id") REFERENCES "address"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "payments" ADD CONSTRAINT "payments_orders_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+ALTER TABLE "payments" ADD CONSTRAINT "payments_orders_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
 
 -- AddForeignKey
 ALTER TABLE "address" ADD CONSTRAINT "address_customer_id_fkey" FOREIGN KEY ("customer_id") REFERENCES "customers"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
