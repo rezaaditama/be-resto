@@ -33,7 +33,7 @@ export const loginUserService = async (data: LoginInput) => {
     };
 
     // check active status account
-    const activeStatus = userType === "STAFF" ? user.is_active : user.is_validate;
+    const activeStatus = userType === "STAFF" ? user.is_active : user.is_validated;
 
     // if account user inactive
     if (!activeStatus) {
@@ -90,7 +90,7 @@ export const registerCustomerService = async (data: RegisterCustomerInput) => {
             fullname: data.fullname,
             phone_number: data.phone_number,
             otp_code: otpCode,
-            is_validate: false,
+            is_validated: false,
             otp_expired_at: otpExpiredAt
         },
     });
@@ -136,7 +136,7 @@ export const verifyCodeOtpService = async (data: VerifyOtpInput) => {
     await prisma.customers.update({
         where: {email: data.email},
         data: {
-            is_validate: true,
+            is_validated: true,
             otp_code: null,
             otp_validated_at: new Date(),
             otp_expired_at: null
@@ -161,7 +161,7 @@ export const resendOtpService = async (data: { email: string }) => {
     }
 
     // 2. Jika sudah diverifikasi, tidak perlu kirim OTP lagi
-    if (user.is_validate) {
+    if (user.is_validated) {
         throw new AppError("Akun ini sudah terverifikasi, silakan login", 400);
     }
 
