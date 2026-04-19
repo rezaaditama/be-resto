@@ -252,28 +252,26 @@ export const logoutUserService = async (userId: string, role: string) => {
 };
 
 export const forgotPasswordService = async (data: { email: string }) => {
-    // Cari di staff, jika tidak ada cari di customer
-    let user: any = await prisma.staff.findUnique({ where: { email: data.email } });
-    let userType: "staff" | "customers" = "staff";
+    
+    // 1. Langsung cari HANYA di tabel customers
+    const user = await prisma.customers.findUnique({ 
+        where: { email: data.email } 
+    });
 
-    if (!user) {
-        user = await prisma.customers.findUnique({ where: { email: data.email } });
-        userType = "customers";
-    }
-
+    // 2. Jika tidak ditemukan di tabel customers, langsung lempar error
     if (!user) throw new AppError("Email tidak terdaftar", 404);
 
-    // Buat OTP baru
+    // 3. Buat OTP baru
     const otpCode = Math.floor(100000 + Math.random() * 900000);
     const otpExpiredAt = new Date(Date.now() + 10 * 60 * 1000); // 10 menit
 
-    // Update tabel yang sesuai
-    await (prisma[userType] as any).update({
+    // 4. Update langsung ke tabel customers (tanpa perlu userType yang dinamis lagi)
+    await prisma.customers.update({
         where: { email: data.email },
         data: { otp_code: otpCode, otp_expired_at: otpExpiredAt }
     });
 
-    // Kirim email
+    // 5. Kirim email
     await sendOtpEmail(user.email, user.fullname, otpCode, "FORGOT_PASSWORD");
 
     return { message: "Kode OTP untuk reset password telah dikirim ke email anda" };
@@ -281,13 +279,22 @@ export const forgotPasswordService = async (data: { email: string }) => {
 
 // Verifikasi OTP dan berikan Token Sementara
 export const verifyResetOtpService = async (data: VerifyResetOtpInput) => {
-    let user: any = await prisma.staff.findUnique({ where: { email: data.email } });
-    if (!user) user = await prisma.customers.findUnique({ where: { email: data.email } });
+    // 1. Langsung cari HANYA di tabel customers
+    const user = await prisma.customers.findUnique({ 
+        where: { email: data.email } 
+    });
 
-    if (!user || user.otp_code !== data.otpCode) throw new AppError("Kode OTP salah", 400);
-    if (user.otp_expired_at && new Date() > user.otp_expired_at) throw new AppError("OTP Kadaluarsa", 400);
+    // 2. Validasi keberadaan user dan kecocokan OTP
+    if (!user || user.otp_code !== data.otpCode) {
+        throw new AppError("Kode OTP salah atau email tidak terdaftar", 400);
+    }
+    
+    // 3. Validasi waktu kadaluarsa OTP
+    if (user.otp_expired_at && new Date() > user.otp_expired_at) {
+        throw new AppError("OTP Kadaluarsa, silakan minta ulang", 400);
+    }
 
-    // Buat token sementara yang berlaku 15 menit saja
+    // 4. Buat token sementara yang berlaku 15 menit saja
     const resetToken = jwt.sign(
         { id: user.id, email: user.email, purpose: "reset_password" },
         env.JWT_SECRET,
@@ -299,17 +306,15 @@ export const verifyResetOtpService = async (data: VerifyResetOtpInput) => {
 
 // Eksekusi Reset Password (Tanpa butuh email di body, ambil dari token JWT)
 export const resetPasswordService = async (userId: string, data: ResetPasswordInput) => {
+    // 1. Enkripsi password baru
     const hashedPassword = await bcrypt.hash(data.newPassword, 10);
 
-    // Update di kedua tabel (atau buat fungsi helper untuk mendeteksi tabel)
-    const isStaff = await prisma.staff.findUnique({ where: { id: userId } });
-    const table = isStaff ? "staff" : "customers";
-
-    await (prisma[table] as any).update({
+    // 2. Langsung update ke tabel customers dan bersihkan sisa OTP
+    await prisma.customers.update({
         where: { id: userId },
         data: { 
             password: hashedPassword, 
-            otp_code: null, 
+            otp_code: null,         // Bersihkan OTP agar tidak bisa dipakai lagi
             otp_expired_at: null 
         }
     });
