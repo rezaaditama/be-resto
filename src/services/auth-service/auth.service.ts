@@ -58,14 +58,16 @@ export const loginUserService = async (data: LoginInput) => {
 // Register customer service
 export const registerCustomerService = async (data: RegisterCustomerInput) => {
     
+    const normalizedEmail = data.email.toLowerCase();
+
     // check email if already exist in customer table
     const existingCustomerEmail = await prisma.customers.findUnique({
-        where: {email: data.email}
+        where: {email: normalizedEmail}
     });
 
     // check email if already exist in staff table
     const existingStaffEmail = await prisma.staff.findUnique({
-        where: {email: data.email}
+        where: {email: normalizedEmail}
     });
 
     // if email already exist
@@ -85,7 +87,7 @@ export const registerCustomerService = async (data: RegisterCustomerInput) => {
     // Create customer
     const newCustomer = await prisma.customers.create({
         data: {
-            email: data.email,
+            email: normalizedEmail,
             password: hashedPassword,
             fullname: data.fullname,
             phone_number: data.phone_number,
@@ -112,9 +114,10 @@ export const registerCustomerService = async (data: RegisterCustomerInput) => {
 // Verify OTP service
 export const verifyCodeOtpService = async (data: VerifyOtpInput) => {
 
+    const normalizedEmail = data.email.toLowerCase();
     // search user in customer table
     const user = await prisma.customers.findUnique({
-        where: {email: data.email}
+        where: {email: normalizedEmail}
     });
 
     // if user not found
@@ -134,7 +137,7 @@ export const verifyCodeOtpService = async (data: VerifyOtpInput) => {
 
     // update customer data
     await prisma.customers.update({
-        where: {email: data.email},
+        where: {email: normalizedEmail},
         data: {
             is_validated: true,
             otp_code: null,
@@ -151,9 +154,11 @@ export const verifyCodeOtpService = async (data: VerifyOtpInput) => {
 
 // kirim ulang otp service
 export const resendOtpService = async (data: { email: string }) => {
+
+    const normalizedEmail = data.email.toLowerCase();
     // 1. Cari user di tabel customer
     const user = await prisma.customers.findUnique({
-        where: { email: data.email }
+        where: { email: normalizedEmail }
     });
 
     if (!user) {
@@ -184,7 +189,7 @@ export const resendOtpService = async (data: { email: string }) => {
 
     // 4. Update di database
     await prisma.customers.update({
-        where: { email: data.email },
+        where: { email: normalizedEmail },
         data: {
             otp_code: newOtpCode,
             otp_expired_at: newOtpExpiredAt
@@ -205,14 +210,15 @@ export const resendOtpService = async (data: { email: string }) => {
 // Register staff service
 export const registerStaffService = async (data: RegisterStaffInput) => {
     
+    const normalizedEmail = data.email.toLowerCase();
     // Check email already exist in staff table
     const existingStaffEmail = await prisma.staff.findUnique({
-        where: {email: data.email}
+        where: {email: normalizedEmail}
     });
 
     // Check email already exist in customer table
     const existingCustomerEmail = await prisma.customers.findUnique({
-        where: {email: data.email}
+        where: {email: normalizedEmail}
     });
 
     if (existingStaffEmail || existingCustomerEmail) {
@@ -225,7 +231,7 @@ export const registerStaffService = async (data: RegisterStaffInput) => {
     // Create staff account
     const newStaff = await prisma.staff.create({
         data: {
-            email: data.email,
+            email: normalizedEmail,
             password: hashedPassword,
             fullname: data.fullname,
             role: data.role,
@@ -253,12 +259,14 @@ export const logoutUserService = async (userId: string, role: string) => {
 
 export const forgotPasswordService = async (data: { email: string }) => {
 
+    const normalizedEmail = data.email.toLowerCase();
+
     // Cari di staff, jika tidak ada cari di customer
-    let user: any = await prisma.staff.findUnique({ where: { email: data.email } });
+    let user: any = await prisma.staff.findUnique({ where: { email: normalizedEmail } });
     let userType: "staff" | "customers" = "staff";
 
     if (!user) {
-        user = await prisma.customers.findUnique({ where: { email: data.email } });
+        user = await prisma.customers.findUnique({ where: { email: normalizedEmail } });
         userType = "customers";
     }
 
@@ -270,7 +278,7 @@ export const forgotPasswordService = async (data: { email: string }) => {
 
     // Update tabel yang sesuai
     await (prisma[userType] as any).update({
-        where: { email: data.email },
+        where: { email: normalizedEmail },
         data: { otp_code: otpCode, otp_expired_at: otpExpiredAt }
     });
 
@@ -282,8 +290,10 @@ export const forgotPasswordService = async (data: { email: string }) => {
 // Verifikasi OTP dan berikan Token Sementara
 export const verifyResetOtpService = async (data: VerifyResetOtpInput) => {
 
-    let user: any = await prisma.staff.findUnique({ where: { email: data.email } });
-    if (!user) user = await prisma.customers.findUnique({ where: { email: data.email } });
+    const normalizedEmail = data.email.toLowerCase();
+
+    let user: any = await prisma.staff.findUnique({ where: { email: normalizedEmail } });
+    if (!user) user = await prisma.customers.findUnique({ where: { email: normalizedEmail } });
 
     if (!user || user.otp_code !== data.otpCode) throw new AppError("Kode OTP salah", 400);
     if (user.otp_expired_at && new Date() > user.otp_expired_at) throw new AppError("OTP Kadaluarsa", 400);
