@@ -40,7 +40,6 @@ model orders {
   staff_id           String?         @db.Uuid
   customer_id        String?         @db.Uuid
   discount_id        Int?
-  taxes_id           Int?
   address_id         String?         @db.Uuid
   source             order_source
   status             order_status
@@ -57,7 +56,6 @@ model orders {
   expired_at         DateTime?       @db.Timestamp(6)
   staff              staff?          @relation(fields: [staff_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   discount           discount?       @relation(fields: [discount_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  taxes              taxes?          @relation(fields: [taxes_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   customers          customers?      @relation(fields: [customer_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   table              tables?         @relation(fields: [table_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
   address            address?        @relation(fields: [address_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
@@ -147,16 +145,6 @@ model discount {
   created_at    DateTime  @default(now()) @db.Timestamp(6)
   updated_at    DateTime? @updatedAt @db.Timestamp(6)
   orders        orders[]
-}
-
-model taxes {
-  id         Int       @id @default(autoincrement())
-  name       String    @db.VarChar(50)
-  rate       Int
-  is_active  Boolean?  @default(true)
-  created_at DateTime  @default(now()) @db.Timestamp(6)
-  updated_at DateTime? @updatedAt @db.Timestamp(6)
-  orders     orders[]
 }
 
 model notifications {

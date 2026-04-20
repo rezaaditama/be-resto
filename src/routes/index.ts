@@ -1,7 +1,6 @@
 import { Application, Router } from "express"
 import AuthRouter from "./auth.route";
 import TableRouter from "./table.route";
-import TaxesRouter from "./taxes.route";
 import MenuRouter from "./menu.route";
 import DiscountRouter from './discount.route';
 import ProfileRouter from "./profile.route";
@@ -9,7 +8,6 @@ import ProfileRouter from "./profile.route";
 const _routes: Array<[string, Router]> = [
     ["/auth", AuthRouter],
     ["/table", TableRouter],
-    ["/taxes", TaxesRouter],
     ["/menu", MenuRouter],
     ["/discount", DiscountRouter],
     ["/profile", ProfileRouter]
