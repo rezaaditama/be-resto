@@ -4,9 +4,9 @@ import { AppError } from "../utils/appError";
 import fs from "fs";
 
 // check uploads folder is exist
-const uploadDir = path.join("uploads", "menus");
+const uploadDir = path.resolve(process.cwd(), "uploads", "menus");
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, {recursive: true})
+    fs.mkdirSync(uploadDir, { recursive: true })
 }
 
 // configure storage
@@ -37,6 +37,6 @@ export const uploadMenuImage = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 2 *1024 * 1024 // 2MB
+        fileSize: 2 * 1024 * 1024 // 2MB
     }
 })
