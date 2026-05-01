@@ -82,7 +82,6 @@ model staff {
   otp_code         Int?
   role             role
   gender           gender_option?
-  date_of_birth    DateTime?      @db.Date
   is_active        Boolean?       @default(true)
   created_at       DateTime       @default(now()) @db.Timestamp(6)
   updated_at       DateTime?      @updatedAt @db.Timestamp(6)
