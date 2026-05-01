@@ -44,7 +44,7 @@ COPY --from=builder /app/generated ./generated
 RUN npm install --omit=dev
 
 # change user to non-root
-RUN chown -R node:node /app
+RUN mkdir -p /app/uploads/menus && chown -R node:node /app/uploads
 USER node
 
 # port running
