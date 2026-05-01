@@ -10,11 +10,13 @@ import path from "path";
 const app: Application = express();
 
 // Middleware Global
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
 
 // Get routes
 routes(app);
