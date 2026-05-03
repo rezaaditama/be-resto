@@ -28,7 +28,7 @@ export const createMenuController = asyncHandler(async (req: AuthRequest, res: R
     }
 
     // normalize image path
-    const normalizedPath = req.file.path.replace(/\\/g, "/");
+    const normalizedPath = req.file.path.replace(/\\/g, "/").replace(/^\/?app\//, "/");
 
     // input validation by zod
     const inputValidation = createMenuSchema.safeParse(req.body);
