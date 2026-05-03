@@ -5,6 +5,7 @@ import { env } from "../../config/env";
 import jwt from "jsonwebtoken";
 import { sendOtpEmail } from "../../utils/sendEmail";
 import { AppError } from "../../utils/appError";
+import { nonoptional } from "zod";
 
 // Login user service
 export const loginUserService = async (data: LoginInput) => {
@@ -306,6 +307,62 @@ export const verifyResetOtpService = async (data: VerifyResetOtpInput) => {
     );
 
     return { resetToken };
+};
+
+// Eksekusi Resend Otp Forgot Password
+export const resendForgotPasswordOtpService = async (data: { email: string }) => {
+    // Normalisasi email
+    const normalizedEmail = data.email.toLowerCase();
+
+    // 1. Cari user di tabel customer
+    const user = await prisma.customers.findUnique({ 
+        where: { email: normalizedEmail } 
+    });
+
+    if (!user) {
+        throw new AppError("Email tidak terdaftar", 404);
+    }
+
+    // 2. Mencegah Spam: Batasi pengiriman OTP ulang selama 1 menit (60 detik)
+    if (user.otp_expired_at) {
+        // Hitung kapan OTP terakhir dibuat
+        // Karena forgot password masa berlakunya 10 menit, kita kurangi 10 menit
+        const lastSent = new Date(user.otp_expired_at.getTime() - 10 * 60 * 1000);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now.getTime() - lastSent.getTime()) / 1000);
+
+        // Jika selisih waktu belum mencapai 60 detik, tolak request
+        if (diffInSeconds < 60) {
+            const waitTime = 60 - diffInSeconds;
+            throw new AppError(`Tunggu ${waitTime} detik lagi untuk mengirim ulang OTP`, 429); // 429 = Too Many Requests
+        }
+    }
+
+    // 3. Buat OTP BARU dan set waktu kadaluarsa ke 10 menit ke depan
+    const newOtpCode = Math.floor(100000 + Math.random() * 900000);
+    const newOtpExpiredAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // 4. Update (timpa) OTP lama di database
+    await prisma.customers.update({
+        where: { email: normalizedEmail },
+        data: { 
+            otp_code: newOtpCode, 
+            otp_expired_at: newOtpExpiredAt 
+        }
+    });
+
+    // 5. Kirim ulang email-nya dengan error handling
+    try {
+        await sendOtpEmail(user.email, user.fullname, newOtpCode, "FORGOT_PASSWORD");
+    } catch (error) {
+        console.error("Gagal mengirim ulang kode OTP Forgot Password", error);
+        throw new AppError("Gagal mengirim email, silakan coba lagi nanti", 500);
+    }
+
+    return { 
+        success: true,
+        message: "Kode OTP baru telah berhasil dikirim ulang ke email anda" 
+    };
 };
 
 // Eksekusi Reset Password (Tanpa butuh email di body, ambil dari token JWT)

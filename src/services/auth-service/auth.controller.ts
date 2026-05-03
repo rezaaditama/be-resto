@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
 import { forgotPasswordSchema, loginSchema, registerCustomerSchema, registerStaffSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { forgotPasswordService, loginUserService, logoutUserService, registerCustomerService, registerStaffService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
+import { forgotPasswordService, loginUserService, logoutUserService, registerCustomerService, registerStaffService, resendForgotPasswordOtpService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
 import { responseSuccess } from "../../utils/response";
 import { AuthRequest } from "src/types/auth.types";
 
@@ -133,6 +133,41 @@ export const verifyResetOtpController = asyncHandler(async (req: Request, res: R
     const result = await verifyResetOtpService(inputValidation.data);
     return responseSuccess(res, "OTP Valid, silakan ganti password", result);
 });
+
+// Resend Otp forgot password
+export const resendForgotPasswordOtp = async (req: Request, res: Response) => {
+    try {
+        // 1. Lakukan validasi langsung di dalam Controller menggunakan schema
+        const validation = resendOtpSchema.safeParse(req.body);
+
+        // 2. Jika frontend mengirim data yang salah atau kosong
+        if (!validation.success) {
+            return res.status(400).json({
+                success: false,
+                message: "Validasi gagal",
+                // Zod akan memberikan daftar error yang rapi (misal: "Email wajib diisi")
+                errors: validation.error.flatten().fieldErrors 
+            });
+        }
+
+        // 3. Ekstrak data yang SUDAH LOLOS validasi dan sudah di-lowercase
+        // Jangan pakai req.body lagi di bawah baris ini!
+        const validatedData = validation.data;
+
+        // 4. Lempar data yang sudah aman ke Service
+        const result = await resendForgotPasswordOtpService(validatedData);
+
+        // 5. Kembalikan respons sukses
+        res.status(200).json(result);
+
+    } catch (error: any) {
+        // Tangani error dari Service (misal: "Email tidak terdaftar")
+        res.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Terjadi kesalahan pada server"
+        });
+    }
+};
 
 // Reset Password
 export const resetPasswordController = asyncHandler(async (req: AuthRequest, res: Response) => {
