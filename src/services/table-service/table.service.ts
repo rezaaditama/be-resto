@@ -28,11 +28,34 @@ export const createTableService = async (data: CreateTableInput) => {
 };
 
 // Read data tables service
-export const getAllTablesService = async () => {
+export const getAllTablesService = async (filters?: {status?: "AVAILABLE" | "OCCUPIED" | "DIRTY", table_number?: string, capacity?: number}) => {
     // mengambil semua data dari data base
     const tables = await prisma.tables.findMany({
+
+        where: {
+
+            // filter by status
+            status: filters?.status,
+        
+            // filter by table number
+            table_number: {
+                contains: filters?.table_number,
+                mode: "insensitive"
+            },
+
+            // filter by availability
+            capacity: filters?.capacity
+        },
+
         orderBy: {
             table_number: 'asc'
+        },
+
+        select: {
+            id: true,
+            table_number: true,
+            capacity: true,
+            status: true,
         }
     });
 

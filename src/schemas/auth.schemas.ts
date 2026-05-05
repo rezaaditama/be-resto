@@ -14,7 +14,8 @@ export const registerCustomerSchema = z.object({
         .regex(/[0-9]/, "Password harus mengandung setidaknya satu angka"),
     confirm_password: z.string(),
     fullname: z.string().min(1, "Nama lengkap harus diisi"),
-    phone_number: z.string().min(1, "Nomor telepon harus diisi").regex(/^[0-9]+$/, "Nomor telepon harus terdiri dari angka")
+    phone_number: z.string().min(10, "Nomor telepon terlalu pendek (minimal 10 angka)").max(15, "Nomor telepon terlalu panjang (maksimal 15 angka)").regex(/^(?:\+62|62|0)8[1-9][0-9]{6,10}$/,
+        "Format nomor telepon tidak valid. Gunakan format 08..., 628..., atau +628...")
 }).refine((data) => data.password === data.confirm_password, {
     message: "Konfirmasi kata sandi tidak cocok",
     path: ["confirm_password"], // Error akan muncul di field confirmPassword
@@ -45,7 +46,8 @@ export const registerStaffSchema = z.object({
     fullname: z.string().min(1, "Nama lengkap harus diisi"),
     role: RoleStaffEnum,
     gender: GenderEnum,
-    phone_number: z.string().min(1, "Nomor telepon harus diisi").regex(/^[0-9]+$/, "Nomor telepon harus terdiri dari angka")
+    phone_number: z.string().min(10, "Nomor telepon terlalu pendek (minimal 10 angka)").max(15, "Nomor telepon terlalu panjang (maksimal 15 angka)").regex(/^(?:\+62|62|0)8[1-9][0-9]{6,10}$/,
+        "Format nomor telepon tidak valid. Gunakan format 08..., 628..., atau +628...")
 });
 
 // Schema untuk meminta OTP (Hanya butuh email)

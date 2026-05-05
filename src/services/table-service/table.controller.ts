@@ -3,7 +3,7 @@ import { AppError } from "../../utils/appError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { responseSuccess } from "../../utils/response";
 import { AuthRequest } from "../../types/auth.types";
-import { createTableSchema, updateTableSchema } from "../../schemas/table.schemas";
+import { createTableSchema, getTableFilterShcema, updateTableSchema } from "../../schemas/table.schemas";
 import { createTableService, deleteTableService, getAllTablesService, updateTableService } from "./table.service";
 
 // create table controller
@@ -26,8 +26,10 @@ export const createTableController = asyncHandler(async (req: AuthRequest, res: 
 // read data tables controller
 export const getAllTablesControler = asyncHandler(async (req: Request, res: Response) => {
 
+    const filters = getTableFilterShcema.parse(req.query)
+
     // panggil service
-    const result = await getAllTablesService();
+    const result = await getAllTablesService(filters);
 
     // kirim response sukses
     return responseSuccess(res, "Berhasil mengambil data meja", result);

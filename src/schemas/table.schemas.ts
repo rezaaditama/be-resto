@@ -1,6 +1,12 @@
 import { table_status } from "../../generated/prisma";
 import { z } from "zod";
 
+export const getTableFilterShcema = z.object({
+  status: z.enum(["AVAILABLE", "OCCUPIED", "DIRTY"]).optional(),
+  capacity: z.number().optional(),
+  table_number: z.string().trim().optional()
+});
+
 // Schema untuk menambahkan meja baru
 export const createTableSchema = z.object({
   table_number: z.string().min(1, "Nomor meja harus di isi"),
