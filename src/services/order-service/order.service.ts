@@ -1,11 +1,25 @@
 import { generateOrderIdentity } from "../../utils/orderGenerator";
 import prisma from "../../lib/prisma";
-import { CreateOrderSchema } from "../../schemas/order.schemas";
+import { CreateOrderInput } from "../../schemas/order.schemas";
 import { AppError } from "../../utils/appError";
 import { calculateDiscount, calculateGrandTotal, calculateSubTotal, calculateTax } from "../../utils/orderPriceCalculation";
 
 // create order service
-export const createOrderService = async (data: CreateOrderSchema, userId: string) => {
+export const createOrderService = async (data: CreateOrderInput, userId?: string, userRole?: string) => {
+
+    // validate order source
+    if (userRole === "GUEST") {
+
+        // if source is not QR_SCAN
+        if (data.source !== "QR_SCAN") {
+            throw new AppError("Guest hanya diizinkan menggunakan source QR_SCAN", 403);
+        }
+
+        // if table_id is null
+        if (!data.table_id) {
+            throw new AppError("Nomor meja wajib ada untuk pesanan QR Scan", 400);
+        }
+    };
 
     // prisma transaction
     return await prisma.$transaction(async (tx) => {
@@ -103,8 +117,27 @@ export const createOrderService = async (data: CreateOrderSchema, userId: string
         const grandTotal = calculateGrandTotal(discountValue.amountAfterDiscount, taxAmount, uniqueCode);
 
         // mapping user id
-        const staffId = ['KIOSK', 'CASHIER', 'WAITER'].includes(data.source) ? userId : null;
-        const customerId = (data.source === 'ONLINE') ? userId : (data.customer_id || null);
+        let staffId: string | null = null;
+        let customerId: string | null = null;
+
+        if (userRole === "GUEST") {
+            staffId = null;
+            customerId = null;
+        } else if (["KIOSK_SYSTEM", "CASHIER", "WAITER"].includes(userRole || "")) {
+            staffId = userId || null;
+            customerId = null;
+        } else if (userRole === "CUSTOMER") {
+            staffId = null;
+            customerId = userId || null;
+        } else {
+            throw new AppError("Role user tidak ditemukan", 404);
+        }
+
+        // create message preview
+        const messagePreview = data.order_items.map(item => {
+            const menuName = menus.find(m => m.id === item.menu_id)?.name;
+            return `${item.quantity}x ${menuName}`;
+        }).join(", ");
 
         // create order
         const order = await tx.orders.create({
@@ -127,8 +160,8 @@ export const createOrderService = async (data: CreateOrderSchema, userId: string
                 notifications: {
                     create: {
                         target_role: "CASHIER",
-                        tittle: "Pesanan Baru",
-                        message: `Pesanan baru dengan nomor ${orderNumber} telah dibuat`,
+                        tittle: "Validasi Pembayaran",
+                        message: messagePreview.length > 100 ? messagePreview.substring(0, 97) + '...' : messagePreview,
                         is_read: false,
                     }
                 }
