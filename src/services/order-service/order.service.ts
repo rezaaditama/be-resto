@@ -101,10 +101,11 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
         });
 
         // discount variable value
-        let discountValue = { amountAfterDiscount: totalAmount, discountAmount: 0 };
+        let discountAmount = 0;
+        let finalDiscountId: number | null = null;
 
         // check if discount_id is not null
-        if (data.discount_id) {
+        if (data.discount_id !== undefined && data.discount_id !== null) {
             // find discount_id from database
             const discount = await tx.discount.findUnique({
                 where: {
@@ -128,14 +129,16 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
             };
 
             // calculate discount amount
-            discountValue = calculateDiscount(totalAmount, discount.value.toNumber());
+            const calc = calculateDiscount(totalAmount, discount.value.toNumber());
+            discountAmount = calc.discountAmount;
+            finalDiscountId = data.discount_id;
         };
 
         // calculate tax
-        const taxAmount = calculateTax(discountValue.amountAfterDiscount);
+        const taxAmount = calculateTax(totalAmount - discountAmount);
 
         // calculate grand total
-        const grandTotal = calculateGrandTotal(discountValue.amountAfterDiscount, taxAmount, uniqueCode);
+        const grandTotal = calculateGrandTotal(totalAmount - discountAmount, taxAmount, uniqueCode);
 
         // mapping user id
         let staffId: string | null = null;
@@ -160,12 +163,12 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
                 table_id: tableId,
                 staff_id: staffId,
                 customer_id: customerId,
-                discount_id: data.discount_id || null,
+                discount_id: finalDiscountId,
                 address_id: addressId,
                 source: data.source,
                 status: 'PENDING',
                 total_amount: totalAmount,
-                discount_amount: discountValue.discountAmount,
+                discount_amount: discountAmount,
                 tax_amount: taxAmount,
                 grand_total_amount: grandTotal,
                 order_number: orderNumber,
