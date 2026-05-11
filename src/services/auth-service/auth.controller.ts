@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
-import { forgotPasswordSchema, loginSchema, registerCustomerSchema, registerStaffSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
+import { forgotPasswordSchema, guestLoginSchema, loginSchema, registerCustomerSchema, registerStaffSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { forgotPasswordService, loginUserService, logoutUserService, registerCustomerService, registerStaffService, resendForgotPasswordOtpService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
+import { forgotPasswordService, guestLoginService, loginUserService, logoutUserService, registerCustomerService, registerStaffService, resendForgotPasswordOtpService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
 import { responseSuccess } from "../../utils/response";
-import { AuthRequest } from "src/types/auth.types";
+import { AuthRequest } from "../../types/auth.types";
 
 // Controller user login
 export const loginUserController = asyncHandler(async (req: Request, res: Response) => {
@@ -180,3 +180,21 @@ export const resetPasswordController = asyncHandler(async (req: AuthRequest, res
 
     return responseSuccess(res, result.message);
 });
+
+// controller guest login
+export const guestLoginController = asyncHandler(async (req: Request, res: Response) => {
+    
+    // get tableId from body
+    const inputValidation = guestLoginSchema.safeParse(req.body);
+
+    // validate input
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    };
+
+    // guest login service
+    const result = await guestLoginService(inputValidation.data); 
+
+    // response success
+    return responseSuccess(res, "Guest login berhasil", result);
+})

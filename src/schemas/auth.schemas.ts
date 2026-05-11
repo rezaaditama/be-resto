@@ -70,6 +70,11 @@ export const resetPasswordSchema = z.object({
     path: ["confirmPassword"], // Error akan muncul di field confirmPassword
 });
 
+// schema for guest login
+export const guestLoginSchema = z.object({
+    tableId: z.number().min(1, "Table ID harus diisi").positive("Table ID tidak valid")
+});
+
 // Export type for verify OTP schema
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>
 // export type for resenf OTP schema
@@ -86,3 +91,5 @@ export type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema>;
 export type VerifyResetOtpInput = z.infer<typeof verifyResetOtpSchema>;
 // export type for reset password schema
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+// export type for guest login schema
+export type GuestLoginInput = z.infer<typeof guestLoginSchema>;

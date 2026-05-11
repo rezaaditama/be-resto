@@ -1,4 +1,4 @@
-import { LoginInput, RegisterCustomerInput, RegisterStaffInput, ResetPasswordInput, VerifyOtpInput, VerifyResetOtpInput } from "../../schemas/auth.schemas";
+import { GuestLoginInput, LoginInput, RegisterCustomerInput, RegisterStaffInput, ResetPasswordInput, VerifyOtpInput, VerifyResetOtpInput } from "../../schemas/auth.schemas";
 import prisma from "../../lib/prisma"
 import bcrypt from "bcrypt";
 import { env } from "../../config/env";
@@ -386,3 +386,32 @@ export const resetPasswordService = async (userId: string, data: ResetPasswordIn
     return { message: "Kata sandi berhasil diperbarui" };
 };
 
+// guest login service
+export const guestLoginService = async (data: GuestLoginInput) => {
+    
+    // check table is exist
+    const table = await prisma.tables.findUnique({
+        where: {
+            id: data.tableId
+        }
+    });
+
+    // if table not found
+    if (!table) {
+        throw new AppError("Meja tidak ditemukan", 404);
+    }
+
+    // generate guest token
+    const token = jwt.sign({
+        id: `GUEST-${table.table_number}`,
+        role: "GUEST",
+        }, env.JWT_SECRET, {
+            expiresIn: "5h"
+        });
+
+    // return guest token
+    return {
+        token,
+        tableNumber: table.table_number
+    };
+};

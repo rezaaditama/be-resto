@@ -4,13 +4,15 @@ import TableRouter from "./table.route";
 import MenuRouter from "./menu.route";
 import DiscountRouter from './discount.route';
 import ProfileRouter from "./profile.route";
+import OrderRouter from "./order.route";
 
 const _routes: Array<[string, Router]> = [
     ["/auth", AuthRouter],
     ["/table", TableRouter],
     ["/menu", MenuRouter],
     ["/discount", DiscountRouter],
-    ["/profile", ProfileRouter]
+    ["/profile", ProfileRouter],
+    ["/order", OrderRouter]
 ]
 
 export const routes = (app: Application) => {

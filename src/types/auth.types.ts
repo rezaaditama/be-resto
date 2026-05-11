@@ -3,7 +3,7 @@ import { Request } from "express";
 // JWT payload interface for auth
 export interface JWTPayload {
     id: string;
-    role: "ADMIN" | "CASHIER" | "WAITER" | "KIOSK_SYSTEM" | "CUSTOMER" | "KITCHEN";
+    role: "ADMIN" | "CASHIER" | "WAITER" | "KIOSK_SYSTEM" | "CUSTOMER" | "KITCHEN" | "GUEST";
 }
 
 // Auth request interface
