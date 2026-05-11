@@ -95,7 +95,7 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
             return {
                 menu_id: menu.id,
                 quantity: item.quantity,
-                notes: item.notes,
+                notes: item.notes ?? null,
                 sub_total: subTotal
             };
         });
@@ -105,7 +105,7 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
         let finalDiscountId: number | null = null;
 
         // check if discount_id is not null
-        if (data.discount_id !== undefined && data.discount_id !== null) {
+        if (data.discount_id) {
             // find discount_id from database
             const discount = await tx.discount.findUnique({
                 where: {
@@ -134,11 +134,14 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
             finalDiscountId = data.discount_id;
         };
 
+        // calculate amount after discount
+        const amountAfterDiscount = totalAmount - discountAmount;
+
         // calculate tax
-        const taxAmount = calculateTax(totalAmount - discountAmount);
+        const taxAmount = calculateTax(amountAfterDiscount);
 
         // calculate grand total
-        const grandTotal = calculateGrandTotal(totalAmount - discountAmount, taxAmount, uniqueCode);
+        const grandTotal = calculateGrandTotal(amountAfterDiscount, taxAmount, uniqueCode);
 
         // mapping user id
         let staffId: string | null = null;
