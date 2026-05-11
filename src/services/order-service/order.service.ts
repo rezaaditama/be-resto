@@ -8,21 +8,42 @@ import { calculateDiscount, calculateGrandTotal, calculateSubTotal, calculateTax
 export const createOrderService = async (data: CreateOrderInput, userId?: string, userRole?: string) => {
 
     // validate order source
-    if (userRole === "GUEST") {
+    if (userRole === "GUEST" && data.source !== "QR_SCAN") {
+        throw new AppError("Guest hanya diizinkan melalui QR Scan", 403);
+    };
 
-        // if source is not QR_SCAN
-        if (data.source !== "QR_SCAN") {
-            throw new AppError("Guest hanya diizinkan menggunakan source QR_SCAN", 403);
-        }
+    // initialize table_id and address_id
+    let tableId: number | null = null;
+    let addressId: string | null = null;
 
-        // if table_id is null
-        if (!data.table_id) {
-            throw new AppError("Nomor meja wajib ada untuk pesanan QR Scan", 400);
-        }
+    // get table_id or address_id from data
+    if (data.source === "ONLINE") {
+        addressId = data.address_id;
+    } else {
+        tableId = data.table_id;
     };
 
     // prisma transaction
     return await prisma.$transaction(async (tx) => {
+
+        // if user is correct
+        if (userRole === "CUSTOMER") {
+            const customer = await tx.customers.findUnique({
+                where: {id: userId, is_validated: true}
+            });
+
+            if (!customer) {
+                throw new AppError("Akun customer tidak ditemukan", 404);
+            };
+        } else if (["KIOSK_SYSTEM", "CASHIER", "WAITER"].includes(userRole || "")) {
+            const staff = await tx.staff.findUnique({
+                where: {id: userId, is_active: true}
+            });
+
+            if (!staff) {
+                throw new AppError("Staff tidak aktif/tidak ditemukan", 404);
+            };
+        };
 
         // get order_id, order_number, unique_code
         const {orderId, orderNumber, uniqueCode} = await generateOrderIdentity();
@@ -120,18 +141,11 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
         let staffId: string | null = null;
         let customerId: string | null = null;
 
-        if (userRole === "GUEST") {
-            staffId = null;
-            customerId = null;
+        if (userRole === "CUSTOMER") {
+            customerId = userId || null;
         } else if (["KIOSK_SYSTEM", "CASHIER", "WAITER"].includes(userRole || "")) {
             staffId = userId || null;
-            customerId = null;
-        } else if (userRole === "CUSTOMER") {
-            staffId = null;
-            customerId = userId || null;
-        } else {
-            throw new AppError("Role user tidak ditemukan", 404);
-        }
+        };
 
         // create message preview
         const messagePreview = data.order_items.map(item => {
@@ -143,11 +157,11 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
         const order = await tx.orders.create({
             data: {
                 id: orderId,
-                table_id: data.table_id || null,
+                table_id: tableId,
                 staff_id: staffId,
                 customer_id: customerId,
                 discount_id: data.discount_id || null,
-                address_id: data.address_id || null,
+                address_id: addressId,
                 source: data.source,
                 status: 'PENDING',
                 total_amount: totalAmount,
@@ -169,10 +183,10 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
         });
 
         // update table status
-        if (data.table_id) {
+        if (tableId) {
             await tx.tables.update({
                 where: {
-                    id: data.table_id
+                    id: tableId
                 },
                 data: {
                     status: 'OCCUPIED'
