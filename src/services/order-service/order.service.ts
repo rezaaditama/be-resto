@@ -56,6 +56,17 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
             };
         };
 
+        // check if address exist
+        if (addressId && userRole === "CUSTOMER") {
+            const address = await tx.address.findFirst({
+                where: {id: addressId, customer_id: userId}
+            });
+
+            if (!address) {
+                throw new AppError(`Alamat tidak ditemukan`, 404);
+            };
+        };
+
         // get order_id, order_number, unique_code
         const {orderId, orderNumber, uniqueCode} = await generateOrderIdentity();
 

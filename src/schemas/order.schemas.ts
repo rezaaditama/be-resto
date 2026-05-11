@@ -2,14 +2,14 @@ import { z } from "zod";
 
 // create order items schema
 const itemSchema = z.object({
-  menu_id: z.string().uuid("Format ID Menu salah"),
-  quantity: z.number().positive().int().min(1, "Minimal pembelian 1"),
+  menu_id: z.string().uuid("Format ID Menu tidak valid"),
+  quantity: z.number().positive().int("Jumlah harus bilangan bulat").min(1, "Jumlah pembelian minimal 1"),
   notes: z.string().optional(),
 });
 
 // base order schemas
 const baseOrderSchema = z.object({
-  discount_id: z.number().int().positive().optional(),
+  discount_id: z.number().int().positive("Format ID Diskon tidak valid").optional(),
   order_items: z.array(itemSchema).min(1, "Minimal pembelian 1 menu"),
 });
 
