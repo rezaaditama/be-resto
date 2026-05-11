@@ -45,6 +45,17 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
             };
         };
 
+        // if table exist
+        if (tableId) {
+            const table = await tx.tables.findUnique({
+                where: {id: tableId}
+            });
+
+            if (!table) {
+                throw new AppError(`Nomor meja ${tableId} tidak ditemukan atau tidak tersedia`, 404);
+            };
+        };
+
         // get order_id, order_number, unique_code
         const {orderId, orderNumber, uniqueCode} = await generateOrderIdentity();
 
