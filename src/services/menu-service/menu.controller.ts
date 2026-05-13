@@ -102,7 +102,7 @@ export const updateMenuController = asyncHandler(async (req: Request, res: Respo
     };
 
     // return response success
-    return responseSuccess(res, "Menu berhasil di perbarui", result)
+    return responseSuccess(res, "Menu berhasil di perbarui", result.updateMenu)
 });
 
 export const deleteMenuController = asyncHandler(async (req: Request, res: Response) => {
