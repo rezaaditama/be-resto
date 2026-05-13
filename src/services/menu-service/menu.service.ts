@@ -104,6 +104,7 @@ export const getMenuByIdService = async (id: string) => {
             id: true,
             name: true,
             description: true,
+            category: true,
             stock: true,
             is_available: true,
             price: true,
@@ -165,13 +166,19 @@ export const updateMenuService = async (id: string, data: updateMenuInput) => {
     const isAvailable = currentStock !== null ? currentStock > 0 : false;
 
     // update menu
-    return await prisma.menus.update({
+    const updateMenu = await prisma.menus.update({
         where: {id: id},
         data: {
             ...data,
             is_available: isAvailable
         }
     });
+
+    // return data menu and old image path
+    return {
+        updateMenu,
+        oldImagePath: existingMenu.image_path
+    }
 };
 
 // delete menu service
@@ -192,7 +199,7 @@ export const deleteMenuService = async (id: string) => {
     };
 
     // delete menu
-    return await prisma.menus.update({
+    const deleteMenu = await prisma.menus.update({
         where: {id: id},
         data: {
             deleted_at: new Date(),
@@ -200,4 +207,10 @@ export const deleteMenuService = async (id: string) => {
             stock: 0
         }
     });
+
+    // return data menu and old image path
+    return {
+        deleteMenu,
+        oldImagePath: existingMenu.image_path
+    }
 };

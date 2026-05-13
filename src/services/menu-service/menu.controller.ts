@@ -6,6 +6,7 @@ import { createMenuSchema, getMenuByIdSchema, getMenuFilterSchema, updateMenuSch
 import { AuthRequest } from "../../types/auth.types";
 import { AppError } from "../../utils/appError";
 import fs from "fs";
+import { deleteFile } from "../../utils/fileSystem";
 
 export const getAllMenuController = asyncHandler(async (req: Request, res: Response) => {
     
@@ -72,14 +73,33 @@ export const updateMenuController = asyncHandler(async (req: Request, res: Respo
     // validate id from params
     const { id } = getMenuByIdSchema.parse(req.params);
 
+    // validate body
     const inputValidation = updateMenuSchema.safeParse(req.body);
 
+    // if input validation failed delete image and throw error
     if (!inputValidation.success) {
+        if (req.file) {
+            deleteFile(req.file.path.replace(/\\/g, "/"));
+        }
         throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
     };
 
-    // update stock service
-    const result = await updateMenuService(id, inputValidation.data);
+    // normalize image path
+    let updateData = {...inputValidation.data};
+
+    // if image is uploaded
+    if (req.file) {
+        const normalizedPath = "/uploads/menus/" + req.file.filename;
+        (updateData as any).image_path = normalizedPath;
+    };
+
+    // update menu service
+    const result = await updateMenuService(id, updateData);
+
+    // if image is uploaded
+    if (req.file && result.oldImagePath) {
+        deleteFile(result.oldImagePath);
+    };
 
     // return response success
     return responseSuccess(res, "Menu berhasil di perbarui", result)
@@ -91,8 +111,13 @@ export const deleteMenuController = asyncHandler(async (req: Request, res: Respo
     const { id } = getMenuByIdSchema.parse(req.params);
 
     // delete menu service
-    const result = await deleteMenuService(id);
+    const { deleteMenu, oldImagePath } = await deleteMenuService(id);
+
+    // if image is uploaded
+    if (oldImagePath) {
+        deleteFile(oldImagePath);
+    };
 
     // response success
-    return responseSuccess(res, "Menu berhasil di hapus", result);
+    return responseSuccess(res, "Menu berhasil di hapus", deleteMenu);
 });
