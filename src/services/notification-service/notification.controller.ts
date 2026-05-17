@@ -2,7 +2,7 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../../utils/asyncHandler"; // Sesuaikan dengan path aslimu
 import { AppError } from "../../utils/appError";         // Sesuaikan dengan path aslimu
-import { getNotificationsByRoleService, markNotificationAsReadService, markAllNotificationsAsReadService } from "./notification.service";
+import { getNotificationsByRoleService, markNotificationAsReadService } from "./notification.service";
 
 // Get notifications controller
 export const getNotificationsController = asyncHandler(async (req: Request, res: Response) => {
@@ -47,26 +47,5 @@ export const markNotificationAsReadController = asyncHandler(async (req: Request
         success: true,
         message: "Notifikasi berhasil ditandai sudah dibaca",
         data: updatedNotification
-    });
-});
-
-// Mark all notifications as read controller
-export const markAllAsReadController = asyncHandler(async (req: Request, res: Response) => {
-    
-    // Get role from authenticated user
-    const userRole = (req as any).user?.role;
-
-    // if role not found
-    if (!userRole) {
-        throw new AppError("Akses ditolak, role pengguna tidak ditemukan", 403);
-    }
-
-    // Update all notifications status via service
-    const result = await markAllNotificationsAsReadService(userRole);
-
-    // Response success
-    res.status(200).json({
-        success: true,
-        message: `Berhasil menandai ${result.count} notifikasi sebagai sudah dibaca`
     });
 });

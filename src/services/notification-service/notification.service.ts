@@ -30,28 +30,46 @@ export const getNotificationsByRoleService = async (role: string, userId?: strin
     // =======================================================
     if (role === "CUSTOMER") {
         
-        // Wajib ada ID Customer agar data tidak tertukar
         if (!userId) {
             throw new AppError("ID Customer diperlukan untuk melihat notifikasi", 400);
         }
 
-        // Ambil data dari tabel notifications
-        return await prisma.notifications.findMany({
+        // 1. Ambil orderan milik customer ini berserta semua notifikasinya
+        const customerOrdersWithNotifications = await prisma.orders.findMany({
             where: {
-                target_role: role as any, // 'as any' agar bebas dari garis merah TypeScript
-                
-                // FILTER EKSTRA: Masuk ke tabel orders, cari yang customer_id nya cocok
-                order: {
-                    customer_id: userId 
-                }
+                customer_id: userId 
             },
-            orderBy: [
-                { created_at: 'desc' }
-            ],
             include: {
-                order: true // Tampilkan detail ordernya juga
+                notifications: true 
+            },
+            orderBy: {
+                created_at: 'desc'
             }
         });
+
+        // 2. Olah data untuk memfilter dan membersihkan response
+        const cleanCustomerNotifications = customerOrdersWithNotifications
+            .flatMap(order => {
+                return (order as any).notifications
+                    // FILTER 1: Buang notifikasi verifikasi kasir.
+                    // Kita kecualikan notif yang tittle-nya mengandung kata "Validasi" atau "Verifikasi"
+                    .filter((notif: any) => 
+                        !notif.tittle.toLowerCase().includes("validasi") && 
+                        !notif.tittle.toLowerCase().includes("verifikasi")
+                    )
+                    // FILTER 2: Batasi field data yang dikembalikan (Hanya yang kamu minta)
+                    .map((notif: any) => ({
+                        tittle: notif.tittle, // Sesuaikan typo database 'tittle'
+                        message: notif.message,
+                        is_read: notif.is_read,
+                        created_at: notif.created_at,
+                        updated_at: notif.updated_at
+                    }));
+            })
+            // 3. Urutkan ulang berdasarkan waktu notifikasi yang terbaru di paling atas
+            .sort((a: any, b: any) => b.created_at.getTime() - a.created_at.getTime());
+
+        return cleanCustomerNotifications;
     }
 
     // =======================================================
@@ -65,8 +83,13 @@ export const getNotificationsByRoleService = async (role: string, userId?: strin
         orderBy: [
             { created_at: 'desc' }
         ],
-        include: {
-            order: true 
+        select: {
+            id: true,
+            tittle: true,      
+            message: true,     
+            is_read: true,     
+            created_at: true,  
+            updated_at: true   
         }
     });
 };
@@ -101,26 +124,4 @@ export const markNotificationAsReadService = async (id: string) => {
 
     // return updated notification data
     return updateNotification;
-};
-
-// Update all notifications as read by role service
-export const markAllNotificationsAsReadService = async (role: string) => {
-    
-    // update multiple notifications
-    const updateNotifications = await prisma.notifications.updateMany({
-        
-        // filtering data
-        where: {
-            target_role: role as any, // Akali TypeScript di sini juga
-            is_read: false
-        },
-        
-        // update status
-        data: {
-            is_read: true
-        }
-    });
-
-    // return data notifications
-    return updateNotifications;
 };
