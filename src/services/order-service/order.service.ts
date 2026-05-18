@@ -344,6 +344,7 @@ export const validatePaymentService = async (orderId: string, bankName: string) 
             },
             data: {
                 is_read: true,
+                updated_at: new Date(),
             }
         });
 
@@ -382,40 +383,93 @@ export const updateOrderStatusHelper = async (orderId: string, fromStatus: order
                 [timestampField[toStatus]]: new Date(),
                 notifications: {
                     createMany: {
-                        data: newNotification.map(n => ({...n, is_read: false, order_id: orderId}))
+                        data: newNotification.map(n => ({...n, is_read: false}))
                     }
                 }
             }
         });
 
-        // update notification status kitchen
+        // mapping roles to clear notification
+        let rolesToClear: role[] = [];
         if ((fromStatus === "VALIDATED" && toStatus === "COOKING") || (fromStatus === "COOKING" && toStatus === "READY")) {
-            await tx.notifications.updateMany({
-                where: {
-                    order_id: orderId,
-                    target_role: "KITCHEN",
-                    is_read: false
-                },
-                data: {
-                    is_read: true
-                }
-            });
+            rolesToClear.push("KITCHEN");
         };
 
-        // update notification status waiter
         if (fromStatus === "READY" && toStatus === "COMPLETED") {
+            rolesToClear.push("WAITER");
+        };
+
+        // update notification status
+        if (rolesToClear.length > 0) {
             await tx.notifications.updateMany({
                 where: {
                     order_id: orderId,
-                    target_role: "WAITER",
+                    target_role: {
+                        in: rolesToClear
+                    },
                     is_read: false
                 },
                 data: {
-                    is_read: true
+                    is_read: true,
+                    updated_at: new Date(),
                 }
             });
         };
 
+        // update table status if order status completed
+        if (updatedOrder.table_id && toStatus === "COMPLETED" && fromStatus === "READY") {
+            await tx.tables.update({
+                where: {id: updatedOrder.table_id},
+                data: {status: "DIRTY"}
+            });
+        };
+
+        // return updated order
         return updatedOrder;
     });
 };
+
+// start cooking service
+export const startCookingService = async (orderId: string) => {
+    return await updateOrderStatusHelper(orderId, "VALIDATED", "COOKING")
+};
+
+// ready service
+export const readyService = async (orderId: string) => {
+
+    // get order items details
+    const orderItems = await prisma.order_items.findMany({
+        where: {order_id: orderId},
+        include: {
+            menu: {
+                select: {name: true}
+            }
+        }
+    });
+
+    // mapping order items
+    const orderItemsList = orderItems.map(item => `${item.quantity}x ${item.menu!.name}`).join(", ");
+
+
+    // return notification
+    return await updateOrderStatusHelper(orderId, "COOKING", "READY", [
+        {
+            target_role: "WAITER",
+            tittle: "Pesanan siap diantar",
+            message: orderItemsList
+        },
+        {
+            target_role: null,
+            tittle: "Pesanan sedang diantar",
+            message: "Kabar baik! Kurir sedang dalam perjalanan menuju lokasi Anda."
+        }
+    ]);
+};
+
+// complete service
+export const completeService = async (orderId: string) => {
+    const result = await updateOrderStatusHelper(orderId, "READY", "COMPLETED");
+
+    // return result
+    return result;
+}
