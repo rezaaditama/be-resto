@@ -3,6 +3,7 @@ import prisma from "../../lib/prisma";
 import { CreateOrderInput } from "../../schemas/order.schemas";
 import { AppError } from "../../utils/appError";
 import { calculateDiscount, calculateGrandTotal, calculateSubTotal, calculateTax } from "../../utils/orderPriceCalculation";
+import { order_status, role } from "../../../generated/prisma";
 
 // create order service
 export const createOrderService = async (data: CreateOrderInput, userId?: string, userRole?: string) => {
@@ -252,5 +253,169 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
 
         // return order
         return order;
+    });
+};
+
+export const validatePaymentService = async (orderId: string, bankName: string) => {
+
+    // prisma transaction
+    return await prisma.$transaction(async (tx) => {
+
+        // find order
+        const order = await tx.orders.findUnique({
+            where: {
+                id: orderId,
+                status: 'PENDING'
+            }
+        });
+
+        // if order not found
+        if (!order) {
+            throw new AppError("Pesanan tidak ditemukan", 404);
+        };
+
+        // if order already validated
+        if (order.status !== "PENDING") {
+            throw new AppError("Pesanan sudah divalidasi", 400);
+        };
+
+        // if order expired
+        if (order.expired_at && order.expired_at < new Date()) {
+            await tx.orders.update({
+                where: {
+                    id: orderId,
+                    status: "PENDING"
+                },
+                data: {
+                    status: "CANCELED",
+                }
+            });
+            throw new AppError("Pesanan sudah kadaluarsa", 400);
+        };
+
+        // get order type and time
+        const orderType = order.source === "ONLINE" ? "Delivery" : "Dine In";
+        const orderTime = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute: '2-digit'});
+
+        // create payment data
+        await tx.payments.create({
+            data: {
+                order_id: orderId,
+                amount_paid: order.grand_total_amount,
+                bank_name: bankName,
+            }
+        });
+
+        // update order & create notifications
+        const updatedOrder = await tx.orders.update({
+            where: {
+                id: orderId
+            },
+            data: {
+                status: "VALIDATED",
+                validated_at: new Date(),
+                notifications: {
+                    createMany: {
+                        data: [
+                            {
+                                target_role: null,
+                                tittle: "Pesanan sedang disiapkan",
+                                message: "Dapur telah menerima pesanan Anda. Hidangan Anda sedang disiapkan dengan sepenuh hati.",
+                                is_read: false,
+                            },
+                            {
+                                target_role: "KITCHEN",
+                                tittle: "Pesanan Masuk",
+                                message: `Pesanan ${orderId}, waktu ${orderTime}, ${orderType}`,
+                                is_read: false,
+                            }
+                        ],
+                    },
+                }
+            }
+        });
+
+        // update notification status
+        await tx.notifications.updateMany({
+            where: {
+                order_id: orderId,
+                target_role: "CASHIER",
+                is_read: false,
+            },
+            data: {
+                is_read: true,
+            }
+        });
+
+        return updatedOrder;
+    });
+};
+
+// helper function to update order status
+export const updateOrderStatusHelper = async (orderId: string, fromStatus: order_status, toStatus: order_status, newNotification: {tittle: string, message: string, target_role: role | null}[] = []) => {
+  
+    // prisma transaction
+    return await prisma.$transaction(async (tx) => {
+        
+        // find order
+        const order = await tx.orders.findUnique({
+            where: {id: orderId, status: fromStatus}
+        });
+
+        // if order not found
+        if (!order) {
+            throw new AppError("Pesanan tidak ditemukan", 404);
+        };
+
+        // mapping timestamp
+        const timestampField: Record<string, string> = {
+            'COOKING': "cooking_started_at",
+            "READY": "ready_at",
+            "COMPLETED": "completed_at"
+        };
+
+        // update order status and create notifications
+        const updatedOrder = await tx.orders.update({
+            where: {id: orderId, status: fromStatus},
+            data: {
+                status: toStatus,
+                [timestampField[toStatus]]: new Date(),
+                notifications: {
+                    createMany: {
+                        data: newNotification.map(n => ({...n, is_read: false, order_id: orderId}))
+                    }
+                }
+            }
+        });
+
+        // update notification status kitchen
+        if ((fromStatus === "VALIDATED" && toStatus === "COOKING") || (fromStatus === "COOKING" && toStatus === "READY")) {
+            await tx.notifications.updateMany({
+                where: {
+                    order_id: orderId,
+                    target_role: "KITCHEN",
+                    is_read: false
+                },
+                data: {
+                    is_read: true
+                }
+            });
+        };
+
+        // update notification status waiter
+        if (fromStatus === "READY" && toStatus === "COMPLETED") {
+            await tx.notifications.updateMany({
+                where: {
+                    order_id: orderId,
+                    target_role: "WAITER",
+                    is_read: false
+                },
+                data: {
+                    is_read: true
+                }
+            });
+        };
+
+        return updatedOrder;
     });
 };

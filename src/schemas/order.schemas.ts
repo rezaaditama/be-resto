@@ -29,6 +29,22 @@ export const createOrderSchema = z.discriminatedUnion("source", [
   }),
 ]);
 
+// validate payment schemas
+export const validatePaymentSchema = z.object({
+  bank_name: z.string().min(3, "Nama bank atau metode pembayaran wajib diisi"),
+});
+
+// update status schemas
+export const updateStatusSchema = z.object({
+  status: z.enum(["VALIDATED", "COOKING", "READY", "COMPLETED", "CANCELED"])
+});
+
+// export type validate payment schema
+export type ValidatePaymentInput = z.infer<typeof validatePaymentSchema>;
+
+// export type update status schema
+export type UpdateStatusInput = z.infer<typeof updateStatusSchema>;
+
 // export type create order item schema
 export type CreateItemInput = z.infer<typeof itemSchema>;
 
