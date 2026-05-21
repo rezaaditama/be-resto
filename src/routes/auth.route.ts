@@ -13,7 +13,7 @@ AuthRouter.post("/resend-otp", resendOtpController);
 AuthRouter.post("/forgot-password", forgotPasswordController);
 AuthRouter.post("/verify-reset-otp", verifyResetOtpController);
 AuthRouter.post("/resend-otp-forgot-password", resendForgotPasswordOtp);
-AuthRouter.post("/reset-password", authenticateToken, resetPasswordController);
+AuthRouter.post("/reset-password", resetPasswordController);
 AuthRouter.post("/guest-login", guestLoginController);
 
 export default AuthRouter;
