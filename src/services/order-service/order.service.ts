@@ -416,15 +416,6 @@ export const updateOrderStatusHelper = async (orderId: string, fromStatus: order
             });
         };
 
-        // update table status if order status completed
-        if (updatedOrder.table_id && toStatus === "COMPLETED" && fromStatus === "READY") {
-            await tx.tables.update({
-                where: {id: updatedOrder.table_id},
-                data: {status: "DIRTY"}
-            });
-        };
-
-        // return updated order
         return updatedOrder;
     });
 };
@@ -467,9 +458,111 @@ export const readyService = async (orderId: string) => {
 };
 
 // complete service
-export const completeService = async (orderId: string) => {
+export const completedService = async (orderId: string) => {
     const result = await updateOrderStatusHelper(orderId, "READY", "COMPLETED");
 
     // return result
     return result;
-}
+};
+
+// get order by status service
+export const getOrdersByStatusService = async (statusList: order_status[]) => {
+
+    // find order by status
+    return await prisma.orders.findMany({
+        where: {
+            status: {
+                in: statusList
+            }
+        },
+
+        // include field order items and table
+        include: {
+            order_items: {
+                include: {
+                    menu: {
+                        select: {
+                            name: true
+                        }
+                    }
+                }
+            },
+            table: {
+                select: {
+                    table_number: true
+                }
+            }
+        },
+
+        // order by created at ascending
+        orderBy: {
+            created_at: "asc"
+        }
+    });
+};
+
+// get order by id service
+export const getOrderByIdService = async (orderId: string) => {
+
+    // find order by id
+    const order = await prisma.orders.findUnique({
+        where: {
+            id: orderId
+        },
+        include: {
+            table: {
+                select: {
+                    table_number: true
+                }
+            },
+            order_items: {
+                include: {
+                    menu: {
+                        select: {
+                            name: true,
+                            price: true
+                        }
+                    }
+                },                
+            },
+            payments: true,
+            discount: true,
+            address: true
+        }
+    });
+
+    // if order not found
+    if (!order) {
+        throw new AppError("Pesanan tidak ditemukan", 404);
+    };
+
+    // return order
+    return order;
+};
+
+// get all my order service
+export const getAllMyOrderService = async (userId: string) => {
+
+    // get all order by user id
+    return await prisma.orders.findMany({
+        where: {
+            customer_id: userId
+        },
+        include: {
+            order_items: {
+                include: {
+                    menu: {
+                        select: {
+                            name: true
+                        }
+                    }
+                }
+            },
+        },
+
+        // order by created at ascending
+        orderBy: {
+            created_at: "asc"
+        }
+    });
+};
