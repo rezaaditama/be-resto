@@ -10,10 +10,9 @@ OrderRouter.patch("/:id/validate-payment", authenticateToken, authorizeRole(["CA
 OrderRouter.patch("/:id/start-cooking", authenticateToken, authorizeRole(["KITCHEN"]), startCookingController);
 OrderRouter.patch("/:id/ready", authenticateToken, authorizeRole(["KITCHEN"]), setOrderReadyController);
 OrderRouter.patch("/:id/completed", authenticateToken, authorizeRole(["WAITER"]), setOrderCompletedController);
-OrderRouter.get("/", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrdersByStatusController);
-OrderRouter.get("/:id", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrderByIdController);
 OrderRouter.get("/my-order/:id", authenticateToken, authorizeRole(["CUSTOMER"]), getMyOrderByIdController);
 OrderRouter.get("/my-order", authenticateToken, authorizeRole(["CUSTOMER"]), getMyAllOrderController);
-
+OrderRouter.get("/", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrdersByStatusController);
+OrderRouter.get("/:id", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrderByIdController);
 
 export default OrderRouter;
