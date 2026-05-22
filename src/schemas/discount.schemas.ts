@@ -5,8 +5,8 @@ export const createDiscountSchema = z.object({
   discount_name: z.string().max(255).optional(),
   value: z.number().min(0, "Nilai tidak boleh negatif"), // Decimal di database dibaca number di Zod
   min_purches: z.number().min(0, "Nilai tidak boleh negatif"),
-  start_date: z.date(),
-  end_date: z.date(),
+  start_date: z.coerce.date(),
+  end_date: z.coerce.date(),
   is_active: z.boolean().default(true)
 });
 
