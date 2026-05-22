@@ -3,10 +3,9 @@ import { Response } from "express";
 import { AuthRequest } from "../../types/auth.types";
 import { createOrderSchema, getReportOrderSchema, validatePaymentSchema } from "../../schemas/order.schemas";
 import { AppError } from "../../utils/appError";
-import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, getReportOrderService, readyService, startCookingService, validatePaymentService } from "./order.service";
+import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, getReportOrderService, readyService, startCookingService, updateCancelOrderService, validatePaymentService } from "./order.service";
 import { responseSuccess } from "../../utils/response";
 import { order_status } from "../../../generated/prisma";
-import { timeStamp } from "node:console";
 
 export const createOrderController = asyncHandler(async (req: AuthRequest, res: Response) => {
 
@@ -351,4 +350,26 @@ export const getReportOrderController = asyncHandler( async (req: AuthRequest, r
         result,
         200
     );
-})
+});
+
+export const updateCancelOrderController = asyncHandler(async (req: AuthRequest, res: Response) => {
+
+    // get id from params
+    const {id} = req.params;
+
+    // if id is not string
+    if (typeof id !== "string") {
+        throw new AppError("ID Pesanan tidak valid", 400);
+    };
+
+    // cancel order service
+    const cancelledOrder = await updateCancelOrderService(id);
+
+    // return response success
+    return responseSuccess(
+        res,
+        "Pesanan berhasil dibatalkan",
+        cancelledOrder,
+        200
+    );
+});
