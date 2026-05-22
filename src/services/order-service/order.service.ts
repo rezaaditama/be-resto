@@ -738,10 +738,7 @@ export const updateCancelOrderService = async (orderId: string) => {
     if (order.table_id) {
         await tx.tables.update({
             where: {
-                id: order.table_id,
-                status: {
-                    not: "AVAILABLE"
-                }
+                id: order.table_id
             },
             data: {
                 status: "AVAILABLE"
