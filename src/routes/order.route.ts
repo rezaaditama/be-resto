@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticateToken } from "../middlewares/auth.middleware";
 import { authorizeRole } from "../middlewares/role.middleware";
-import { createOrderController, getMyAllOrderController, getMyOrderByIdController, getOrderByIdController, getOrdersByStatusController, setOrderCompletedController, setOrderReadyController, startCookingController, validatePaymentController } from "../services/order-service/order.controller";
+import { createOrderController, getMyAllOrderController, getMyOrderByIdController, getOrderByIdController, getOrdersByStatusController, getReportOrderController, setOrderCompletedController, setOrderReadyController, startCookingController, validatePaymentController } from "../services/order-service/order.controller";
 
 const OrderRouter = Router();
 
@@ -14,5 +14,6 @@ OrderRouter.get("/my-order/:id", authenticateToken, authorizeRole(["CUSTOMER"]),
 OrderRouter.get("/my-order", authenticateToken, authorizeRole(["CUSTOMER"]), getMyAllOrderController);
 OrderRouter.get("/", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrdersByStatusController);
 OrderRouter.get("/:id", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrderByIdController);
+OrderRouter.get("/report", authenticateToken, authorizeRole(["CASHIER"]), getReportOrderController);
 
 export default OrderRouter;

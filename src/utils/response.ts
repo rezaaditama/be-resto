@@ -17,4 +17,3 @@ export const responseError = (res: Response, message: string, errors: any, statu
         errors,
     });
 };
-

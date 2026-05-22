@@ -566,3 +566,127 @@ export const getAllMyOrderService = async (userId: string) => {
         }
     });
 };
+
+// get report order service
+export const getReportOrderService = async (date: string) => {
+
+    // initialize date
+    const startDate = new Date(`${date}T00:00:00.000Z`);
+    const endDate = new Date(`${date}T23:59:59.999Z`);
+
+    // execute query pararel
+    const [financialSummary, rawTransactions] = await Promise.all([
+
+        // get total sales and total order
+        prisma.orders.aggregate({
+
+            // filter by date and status completed
+            where: {
+                created_at: {
+                    gte: startDate,
+                    lte: endDate
+                },
+                status: "COMPLETED"
+            },
+
+            // sum grand total amount
+            _sum: {
+                grand_total_amount: true
+            },
+
+            // count total order
+            _count: {
+                id: true
+            }
+        }),
+
+        // get all transaction
+      prisma.orders.findMany({
+
+        // filter by date and status completed
+        where: {
+            created_at: {
+                gte: startDate,
+                lte: endDate
+            },
+            status: "COMPLETED"
+        },
+
+        // select field
+        select: {
+            id: true,
+            created_at: true,
+            grand_total_amount: true,
+            order_items: {
+                select: {
+                    quantity: true,
+                    menu: {
+                        select: {
+                            name: true,
+                            category: true
+                        }
+                    }
+                }
+            },
+            payments: {
+                select: {
+                    bank_name: true
+                },
+                take: 1
+            }
+        },
+
+        // order by created at descending
+        orderBy: {
+            created_at: "desc"
+        }
+      })
+    ]);
+
+    // format transaction
+    const formattedTransactions = rawTransactions.map((order) => {
+
+        // initialize foods and drinks array
+        const foods: any[] = [];
+        const drinks: any[] = [];
+
+        // mapping order items
+        order.order_items.forEach((item) => {
+
+            // initialize item data
+            const itemData = {
+                name: item.menu!.name,
+                quantity: item.quantity
+            };
+
+            // push item data to foods or drinks array
+            if (item.menu!.category === "FOOD") {
+                foods.push(itemData);
+            } else if (item.menu!.category === "DRINK") {
+                drinks.push(itemData);
+            };
+        });
+
+        // return formatted transaction
+        return {
+            order_id: order.id,
+            create_at: order.created_at,
+            grand_total_amount: order.grand_total_amount,
+            payment_method: order.payments[0]?.bank_name ?? "BCA",
+            order_items: {
+                foods,
+                drinks
+            }
+        };
+    });
+
+    // return result
+    return {
+        selectedDate: date,
+        summary: {
+            totalOrder: financialSummary._count.id || 0,
+            totalSales: Number(financialSummary._sum.grand_total_amount) || 0
+        },
+        transactions: formattedTransactions
+    };
+};

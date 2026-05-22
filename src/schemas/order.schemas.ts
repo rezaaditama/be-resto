@@ -39,6 +39,14 @@ export const updateStatusSchema = z.object({
   status: z.enum(["VALIDATED", "COOKING", "READY", "COMPLETED", "CANCELED"])
 });
 
+export const getReportOrderSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD").optional(),
+  
+})
+
+// export type get report order schema
+export type GetReportOrderInput = z.infer<typeof getReportOrderSchema>;
+
 // export type validate payment schema
 export type ValidatePaymentInput = z.infer<typeof validatePaymentSchema>;
 

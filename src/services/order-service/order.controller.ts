@@ -1,9 +1,9 @@
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Response } from "express";
 import { AuthRequest } from "../../types/auth.types";
-import { createOrderSchema, validatePaymentSchema } from "../../schemas/order.schemas";
+import { createOrderSchema, getReportOrderSchema, validatePaymentSchema } from "../../schemas/order.schemas";
 import { AppError } from "../../utils/appError";
-import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, readyService, startCookingService, validatePaymentService } from "./order.service";
+import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, getReportOrderService, readyService, startCookingService, validatePaymentService } from "./order.service";
 import { responseSuccess } from "../../utils/response";
 import { order_status } from "../../../generated/prisma";
 import { timeStamp } from "node:console";
@@ -326,3 +326,29 @@ export const getMyAllOrderController = asyncHandler(async (req: AuthRequest, res
         200
     );
 });
+
+// get report order controller
+export const getReportOrderController = asyncHandler( async (req: AuthRequest, res: Response) => {
+
+    // validate data
+    const dataValidation = getReportOrderSchema.safeParse(req.query)
+
+    // if data is not valid
+    if (!dataValidation.success) {
+        throw new AppError("Tanggal tidak valid", 400);
+    };
+
+    // if date is not provided, use today date
+    const targetDate = dataValidation.data.date || new Date().toISOString().split("T")[0];
+
+    // get report order service
+    const result = await getReportOrderService(targetDate);
+
+    // return response success
+    return responseSuccess(
+        res,
+        `Laporan pesanan tanggal ${targetDate} berhasil di ambil`,
+        result,
+        200
+    );
+})
