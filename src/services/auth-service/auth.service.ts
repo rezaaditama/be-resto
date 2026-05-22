@@ -1,4 +1,4 @@
-import { GuestLoginInput, LoginInput, RegisterCustomerInput, RegisterStaffInput, ResetPasswordInput, VerifyOtpInput, VerifyResetOtpInput } from "../../schemas/auth.schemas";
+import { GuestLoginInput, LoginInput, RegisterCustomerInput, ResetPasswordInput, VerifyOtpInput, VerifyResetOtpInput } from "../../schemas/auth.schemas";
 import prisma from "../../lib/prisma"
 import bcrypt from "bcrypt";
 import { env } from "../../config/env";
@@ -206,49 +206,6 @@ export const resendOtpService = async (data: { email: string }) => {
     }
 
     return { message: "Kode OTP baru telah dikirim ke email anda, silahkan cek kembali email anda" };
-};
-
-// Register staff service
-export const registerStaffService = async (data: RegisterStaffInput) => {
-    
-    const normalizedEmail = data.email.toLowerCase();
-    // Check email already exist in staff table
-    const existingStaffEmail = await prisma.staff.findUnique({
-        where: {email: normalizedEmail}
-    });
-
-    // Check email already exist in customer table
-    const existingCustomerEmail = await prisma.customers.findUnique({
-        where: {email: normalizedEmail}
-    });
-
-    if (existingStaffEmail || existingCustomerEmail) {
-        throw new AppError("Email sudah terdaftar", 409);
-    };
-
-    // Hashed password
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-
-    // Create staff account
-    const newStaff = await prisma.staff.create({
-        data: {
-            email: normalizedEmail,
-            password: hashedPassword,
-            fullname: data.fullname,
-            role: data.role,
-            gender: data.gender,
-            phone_number: data.phone_number,
-            is_active: true
-        }
-    });
-
-    // Return message and user data
-    return {
-        message: "Registrasi akun staff berhasil",
-        id: newStaff.id,
-        fullName: newStaff.fullname,
-        role: newStaff.role
-    };
 };
 
 // logout service

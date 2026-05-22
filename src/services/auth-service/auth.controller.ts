@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
-import { forgotPasswordSchema, guestLoginSchema, loginSchema, registerCustomerSchema, registerStaffSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
+import { forgotPasswordSchema, guestLoginSchema, loginSchema, registerCustomerSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { forgotPasswordService, guestLoginService, loginUserService, logoutUserService, registerCustomerService, registerStaffService, resendForgotPasswordOtpService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
+import { forgotPasswordService, guestLoginService, loginUserService, logoutUserService, registerCustomerService, resendForgotPasswordOtpService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
 import { responseSuccess } from "../../utils/response";
 import { AuthRequest } from "../../types/auth.types";
 
@@ -88,24 +88,6 @@ export const logoutUserController = asyncHandler(async (req: AuthRequest, res: R
 
     // Kirim response menggunakan utility responseSuccess Anda
     return responseSuccess(res, result.message);
-});
-
-// controller register staff
-export const registerStaffController = asyncHandler(async (req: Request, res: Response) => {
-
-    // input validation by zod
-    const inputValidation = registerStaffSchema.safeParse(req.body);
-
-    // if validation failed
-    if (!inputValidation.success) {
-        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
-    };
-
-    // register staff service
-    const result = await registerStaffService(inputValidation.data);
-
-    // response success
-    return responseSuccess(res, "Staff berhasil didaftarkan", result, 201)
 });
 
 // Controller untuk meminta OTP (Lupa Password)

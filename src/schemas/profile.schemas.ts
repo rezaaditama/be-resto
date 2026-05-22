@@ -1,5 +1,5 @@
-import { gender_option } from "../../generated/prisma";
-import { float32, z } from "zod";
+import { gender_option, role } from "../../generated/prisma";
+import { z } from "zod";
 
 // Schema untuk update profil & alamat
 export const updateProfileSchema = z.object({
@@ -17,6 +17,16 @@ export const updateProfileSchema = z.object({
             is_core_address: z.boolean({ message: "Format is_core_address harus boolean" }).optional()
         })
     ).optional()
+});
+
+export const updateStaffSchema = z.object({
+    fullname: z.string().max(255, "Nama terlalu panjang").optional(),
+    phone_number: z.string()
+        .regex(/^[0-9]+$/, "Nomor telepon harus terdiri dari angka")
+        .max(15, "Nomor telepon terlalu panjang")
+        .optional(),
+    role: z.nativeEnum(role, {error: "Role tidak valid! Pilih antara ADMIN, CASHIER, KITCHEN, atau WAITER"}).optional(),
+    is_active: z.boolean({ message: "Format is_active harus boolean" }).optional()
 });
 
 // export type for update profile schema

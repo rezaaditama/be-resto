@@ -6,6 +6,7 @@ import DiscountRouter from './discount.route';
 import ProfileRouter from "./profile.route";
 import OrderRouter from "./order.route";
 import NotifRoute from "./notification.route";
+import AdminRoute from "./admin.route";
 
 const _routes: Array<[string, Router]> = [
     ["/auth", AuthRouter],
@@ -14,7 +15,8 @@ const _routes: Array<[string, Router]> = [
     ["/discount", DiscountRouter],
     ["/profile", ProfileRouter],
     ["/order", OrderRouter],
-    ["/notification", NotifRoute]
+    ["/notification", NotifRoute], 
+    ["/admin", AdminRoute]
 ]
 
 export const routes = (app: Application) => {
