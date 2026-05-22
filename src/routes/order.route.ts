@@ -12,8 +12,8 @@ OrderRouter.patch("/:id/ready", authenticateToken, authorizeRole(["KITCHEN"]), s
 OrderRouter.patch("/:id/completed", authenticateToken, authorizeRole(["WAITER"]), setOrderCompletedController);
 OrderRouter.get("/my-order/:id", authenticateToken, authorizeRole(["CUSTOMER"]), getMyOrderByIdController);
 OrderRouter.get("/my-order", authenticateToken, authorizeRole(["CUSTOMER"]), getMyAllOrderController);
+OrderRouter.get("/report", authenticateToken, authorizeRole(["CASHIER"]), getReportOrderController);
 OrderRouter.get("/", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrdersByStatusController);
 OrderRouter.get("/:id", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrderByIdController);
-OrderRouter.get("/report", authenticateToken, authorizeRole(["CASHIER"]), getReportOrderController);
 
 export default OrderRouter;
