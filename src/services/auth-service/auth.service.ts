@@ -5,7 +5,6 @@ import { env } from "../../config/env";
 import jwt from "jsonwebtoken";
 import { sendOtpEmail } from "../../utils/sendEmail";
 import { AppError } from "../../utils/appError";
-import { nonoptional } from "zod";
 
 // Login user service
 export const loginUserService = async (data: LoginInput) => {
@@ -399,7 +398,11 @@ export const guestLoginService = async (data: GuestLoginInput) => {
     // if table not found
     if (!table) {
         throw new AppError("Meja tidak ditemukan", 404);
-    }
+    };
+
+    if (table.status !== "AVAILABLE") {
+        throw new AppError(`Meja Nomor ${table.table_number} sudah terisi, jika ingin memesan silahkan ke waiters`, 400);
+    };
 
     // generate guest token
     const token = jwt.sign({

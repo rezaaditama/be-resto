@@ -8,9 +8,21 @@ import { order_status, role } from "../../../generated/prisma";
 // create order service
 export const createOrderService = async (data: CreateOrderInput, userId?: string, userRole?: string) => {
 
+    // mapping role to source
+    const roleSourceMatrix: Record<string, string> = {
+        "CUSTOMER": "ONLINE",
+        "GUEST": "QR_SCAN",
+        "KIOSK_SYSTEM": "KIOSK",
+        "CASHIER": "CASHIER",
+        "WAITER": "WAITER"
+    };
+
+    // get expected source from role
+    const expectedSource = roleSourceMatrix[userRole || ""];
+
     // validate order source
-    if (userRole === "GUEST" && data.source !== "QR_SCAN") {
-        throw new AppError("Guest hanya diizinkan melalui QR Scan", 403);
+    if (!expectedSource || data.source !== expectedSource) {
+        throw new AppError(`Akses ilegal. Akun dengan role '${userRole}' hanya diizinkan membuat pesanan melalui jalur '${expectedSource}'`, 403);
     };
 
     // initialize table_id and address_id
@@ -36,6 +48,7 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
             if (!customer) {
                 throw new AppError("Akun customer tidak ditemukan", 404);
             };
+
         } else if (["KIOSK_SYSTEM", "CASHIER", "WAITER"].includes(userRole || "")) {
             const staff = await tx.staff.findUnique({
                 where: {id: userId, is_active: true}
@@ -689,4 +702,87 @@ export const getReportOrderService = async (date: string) => {
         },
         transactions: formattedTransactions
     };
+};
+
+export const updateCancelOrderService = async (orderId: string) => {
+
+    // prisma transaction
+    return await prisma.$transaction(async (tx) => {
+
+        // get order by id
+        const order = await tx.orders.findUnique({
+            where: {
+                id: orderId
+            },
+            include: {
+                order_items: true
+            }
+        });
+
+        // if order not found
+        if (!order || order.status !== "PENDING") {
+            throw new AppError("Pesanan tidak ditemukan atau sudah dibatalkan", 404);
+        };
+
+        // update order status
+       const updateOrder = await tx.orders.update({
+        where: {
+            id: orderId
+        },
+        data: {
+            status: "CANCELED"
+        }
+       });
+
+    // update table status from not available to available
+    if (order.table_id) {
+        await tx.tables.update({
+            where: {
+                id: order.table_id,
+                status: {
+                    not: "AVAILABLE"
+                }
+            },
+            data: {
+                status: "AVAILABLE"
+            }
+        });
+    };
+
+    // update stock menu
+    await Promise.all(
+        order.order_items.map(async (item) => {
+
+            // if menu id is not null
+            if (item.menu_id) {
+                const updateStockMenu = await tx.menus.update({
+                    where: {
+                        id: item.menu_id
+                    },
+                    data: {
+                        stock: {
+                            increment: item.quantity
+                        }
+                    }
+                })
+
+                // if menu available
+                if (updateStockMenu.stock !== null && !updateStockMenu.is_available && updateStockMenu.stock > 0) {
+                    await tx.menus.update({
+                        where: {
+                            id: item.menu_id
+                        },
+                        data: {
+                            is_available: true
+                        }
+                    });
+                };
+            };
+        })
+    );
+
+    // return result
+    return updateOrder;
+
+    });
 };
