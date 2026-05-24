@@ -165,8 +165,16 @@ export const getOrdersByStatusController = asyncHandler(async (req: AuthRequest,
         return targetStatus.includes(status);
     }) as order_status[];
 
+    // get start of day
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // get end of day
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
     // get order by status
-    const rawOrders = await getOrdersByStatusService(finalTargetStatus);
+    const rawOrders = await getOrdersByStatusService(finalTargetStatus, startOfDay, endOfDay);
 
     // format order data
     const formattedOrders = rawOrders.map(order => {

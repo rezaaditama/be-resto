@@ -522,13 +522,17 @@ export const completedService = async (orderId: string) => {
 // };
 
 // get order by status service
-export const getOrdersByStatusService = async (statusList: order_status[]) => {
+export const getOrdersByStatusService = async (statusList: order_status[], startOfDay: Date, endOfDay: Date) => {
     
     // find order by status
     return await prisma.orders.findMany({
         where: {
             status: {
                 in: statusList
+            },
+            created_at: {
+                gte: startOfDay,
+                lte: endOfDay
             }
         },
 
