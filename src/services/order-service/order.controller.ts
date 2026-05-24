@@ -178,7 +178,7 @@ export const getOrdersByStatusController = asyncHandler(async (req: AuthRequest,
             table_number: order.table?.table_number ?? null,
             status: order.status,
             source: order.source,
-            total_amount: order.grand_total_amount,
+            grand_total_amount: order.grand_total_amount,
             order_type: order.source === "ONLINE" ? "DELIVERY" : "DINE IN",
             timeStamp: (order.completed_at || order.ready_at || order.cooking_started_at || order.validated_at || order.created_at)?.toISOString(),
             items: order.order_items.map(item => ({
