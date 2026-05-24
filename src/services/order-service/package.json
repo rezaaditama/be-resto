@@ -1,0 +1,32 @@
+{
+  "name": "order-service",
+  "version": "1.0.0",
+  "description": "Order Microservice for IT'S Resto",
+  "main": "dist/services/order-service/order.server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only order.server.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.5.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.1",
+    "node-cron": "^4.2.1",
+    "zod": "^4.3.6",
+    "pg": "^8.20.0",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^25.5.2",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.11",
+    "typescript": "^5.9.3"
+  }
+}
