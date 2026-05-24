@@ -1,16 +1,14 @@
 import { Application, Router } from "express"
 import TableRouter from "./table.route";
-// import MenuRouter from "./menu.route";
 import DiscountRouter from './discount.route';
-import ProfileRouter from "./profile.route";
+// import ProfileRouter from "../services/profile-service/profile.route";
 import NotifRoute from "./notification.route";
 import AdminRoute from "./admin.route";
 
 const _routes: Array<[string, Router]> = [
     ["/table", TableRouter],
-    // ["/menu", MenuRouter],
     ["/discount", DiscountRouter],
-    ["/profile", ProfileRouter],
+    // ["/profile", ProfileRouter],
     ["/notification", NotifRoute],
     ["/admin", AdminRoute]
 ]

@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { authenticateToken } from "../middlewares/auth.middleware";
-import { getAddressController, getProfileController, getStaffProfileController, updateProfileController, updateSelfStaffController, updateStaffController } from "../services/profile-service/profile.controller";
-import { authorizeRole } from "../middlewares/role.middleware";
+import { authenticateToken } from "../../middlewares/auth.middleware";
+import { getAddressController, getProfileController, getStaffProfileController, updateProfileController, updateSelfStaffController, updateStaffController } from "./profile.controller";
+import { authorizeRole } from "../../middlewares/role.middleware";
 
 const ProfileRouter = Router();
 

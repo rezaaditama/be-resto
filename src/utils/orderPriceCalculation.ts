@@ -20,7 +20,7 @@ export const calculateDiscount = (totalAmount: number, discountValue: number): D
 };
 
 // calculate tax 11%
-export const calculateTax = (amountAfterDiscount: number, taxRate = 0.11): number => {
+export const calculateTax = (amountAfterDiscount: number, taxRate = 0.10): number => {
     return Math.round(amountAfterDiscount * taxRate);
 };
 

@@ -1,4 +1,4 @@
-import { gender_option, role } from "../../generated/prisma";
+import { gender_option, role } from "../../../generated/prisma";
 import { z } from "zod";
 
 // Schema untuk update profil & alamat

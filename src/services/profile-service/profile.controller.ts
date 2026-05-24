@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { AuthRequest } from "../../types/auth.types";
-import { updateProfileSchema, updateStaffSchema } from "../../schemas/profile.schemas";
+import { updateProfileSchema, updateStaffSchema } from "./profile.schemas";
 import { responseSuccess } from "../../utils/response";
 import { completeCustomerProfileService, getCustomerAddressesService, getCustomerProfileService, getStaffProfileService, updateStaffService } from "./profile.service";
 

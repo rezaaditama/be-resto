@@ -1,6 +1,6 @@
 import { generateOrderIdentity } from "../../utils/orderGenerator";
 import prisma from "../../lib/prisma";
-import { CreateOrderInput } from "../../schemas/order.schemas";
+import { CreateOrderInput } from "./order.schemas";
 import { AppError } from "../../utils/appError";
 import { calculateDiscount, calculateGrandTotal, calculateSubTotal, calculateTax } from "../../utils/orderPriceCalculation";
 import { order_status, role } from "../../../generated/prisma";

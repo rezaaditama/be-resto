@@ -1,8 +1,6 @@
 import prisma from "../../lib/prisma"
-import { env } from "../../config/env";
-import jwt from "jsonwebtoken";
 import { AppError } from "../../utils/appError";
-import { UpdateProfileInput } from "../../schemas/profile.schemas";
+import { UpdateProfileInput } from "./profile.schemas";
 
 export const completeCustomerProfileService = async (customerId: string, data: UpdateProfileInput) => {
     
