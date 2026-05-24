@@ -1,7 +1,7 @@
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Response } from "express";
 import { AuthRequest } from "../../types/auth.types";
-import { createOrderSchema, getOrderByCategorySchema, getReportOrderSchema, validatePaymentSchema } from "../../schemas/order.schemas";
+import { createOrderSchema, getOrderByCategorySchema, getReportOrderSchema, validatePaymentSchema } from "./order.schemas";
 import { AppError } from "../../utils/appError";
 import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, getReportOrderService, readyService, startCookingService, updateCancelOrderService, validatePaymentService } from "./order.service";
 import { responseSuccess } from "../../utils/response";
