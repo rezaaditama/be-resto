@@ -9,7 +9,7 @@ WORKDIR /app
 
 # copy file package.json and package.lock.json
 COPY package*.json ./
-COPY prisma ../
+COPY prisma .prisma/
 COPY src/services/auth-service/package*.json ./src/services/auth-service/
 
 # install dependencies
