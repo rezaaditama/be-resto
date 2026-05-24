@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as discountService from './discount.service';
-import { createDiscountSchema, updateDiscountSchema } from '../../schemas/discount.schemas';
+import { createDiscountSchema, updateDiscountSchema } from './discount.schemas';
 
 export const createDiscountController = async (req: Request, res: Response) => {
   try {

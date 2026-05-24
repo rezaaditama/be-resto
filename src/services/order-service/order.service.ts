@@ -149,12 +149,16 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
                 }
             });
 
+            // initialize date now
+            const dateNow = new Date();
+            const currentTimestamp = new Date(dateNow.getFullYear(), dateNow.getMonth(), dateNow.getDate());
+
             // check if discount is not found
             if (
                 !discount || 
                 !discount.is_active || 
-                (discount.end_date !== null && discount.end_date < new Date()) || 
-                (discount.start_date !== null && discount.start_date > new Date())
+                (discount.end_date !== null && discount.end_date < currentTimestamp) || 
+                (discount.start_date !== null && discount.start_date > currentTimestamp)
             ) {
                 throw new AppError('Diskon tidak ditemukan atau tidak aktif', 400);
             };
