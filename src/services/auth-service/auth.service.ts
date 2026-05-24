@@ -1,4 +1,4 @@
-import { GuestLoginInput, LoginInput, RegisterCustomerInput, ResetPasswordInput, VerifyOtpInput, VerifyResetOtpInput } from "../../schemas/auth.schemas";
+import { GuestLoginInput, LoginInput, RegisterCustomerInput, ResetPasswordInput, VerifyOtpInput, VerifyResetOtpInput } from "./auth.schemas";
 import prisma from "../../lib/prisma"
 import bcrypt from "bcrypt";
 import { env } from "../../config/env";

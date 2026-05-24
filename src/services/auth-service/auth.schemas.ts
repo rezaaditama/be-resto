@@ -1,5 +1,4 @@
-import { gender_option } from "../../generated/prisma";
-import { float32, z } from "zod";
+import { z } from "zod";
 
 // type for login schema
 export const loginSchema = z.object({

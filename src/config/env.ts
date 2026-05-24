@@ -1,7 +1,10 @@
 import dotenv from "dotenv";
+import path from "path";
 import { z } from "zod";
 
-dotenv.config();
+dotenv.config({
+    path: path.resolve(__dirname, "../../.env")
+});
 
 // env schema
 const envSchema = z.object({
@@ -12,7 +15,10 @@ const envSchema = z.object({
     SMTP_HOST: z.string().min(1, "SMPT_HOST harus diisi"),
     SMTP_PORT: z.string().default("587"),
     SMTP_USER: z.string().email("SMPT_USER harus berupa email yang valid"),
-    SMTP_PASS: z.string().min(1, "SMPT_PASS harus diisi")
+    SMTP_PASS: z.string().min(1, "SMPT_PASS harus diisi"),
+
+    // port microservice
+    AUTH_PORT: z.string().default("3001"),
 });
 
 // parse env

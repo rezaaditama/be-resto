@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { forgotPasswordController, guestLoginController, loginUserController, logoutUserController, registerCustomerController, resendForgotPasswordOtp, resendOtpController, resetPasswordController, verifyOtpController, verifyResetOtpController } from "../services/auth-service/auth.controller";
-import { authenticateToken } from "../middlewares/auth.middleware";
+import { forgotPasswordController, guestLoginController, loginUserController, logoutUserController, registerCustomerController, resendForgotPasswordOtp, resendOtpController, resetPasswordController, verifyOtpController, verifyResetOtpController } from "./auth.controller";
+import { authenticateToken } from "../../middlewares/auth.middleware";
 
 const AuthRouter = Router();
 

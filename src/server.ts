@@ -1,3 +1,4 @@
+import "./config/env";
 import app from "./app";
 import { initOrderCronJobs } from "./crons/order-expire.cron";
 

@@ -485,42 +485,6 @@ export const completedService = async (orderId: string) => {
     return result;
 };
 
-// // get order by status service
-// export const getOrdersByStatusService = async (statusList: order_status[]) => {
-
-//     // find order by status
-//     return await prisma.orders.findMany({
-//         where: {
-//             status: {
-//                 in: statusList
-//             }
-//         },
-
-//         // include field order items and table
-//         include: {
-//             order_items: {
-//                 include: {
-//                     menu: {
-//                         select: {
-//                             name: true
-//                         }
-//                     }
-//                 }
-//             },
-//             table: {
-//                 select: {
-//                     table_number: true
-//                 }
-//             }
-//         },
-
-//         // order by created at ascending
-//         orderBy: {
-//             created_at: "desc"
-//         }
-//     });
-// };
-
 // get order by status service
 export const getOrdersByStatusService = async (statusList: order_status[], startOfDay: Date, endOfDay: Date) => {
     

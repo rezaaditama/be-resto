@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
-import { forgotPasswordSchema, guestLoginSchema, loginSchema, registerCustomerSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "../../schemas/auth.schemas";
+import { forgotPasswordSchema, guestLoginSchema, loginSchema, registerCustomerSchema, resendOtpSchema, resetPasswordSchema, verifyOtpSchema, verifyResetOtpSchema } from "./auth.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { forgotPasswordService, guestLoginService, loginUserService, logoutUserService, registerCustomerService, resendForgotPasswordOtpService, resendOtpService, resetPasswordService, verifyCodeOtpService, verifyResetOtpService } from "./auth.service";
 import { responseSuccess } from "../../utils/response";
