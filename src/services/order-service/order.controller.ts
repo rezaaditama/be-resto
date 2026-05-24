@@ -1,7 +1,7 @@
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Response } from "express";
 import { AuthRequest } from "../../types/auth.types";
-import { createOrderSchema, getReportOrderSchema, validatePaymentSchema } from "../../schemas/order.schemas";
+import { createOrderSchema, getOrderByCategorySchema, getReportOrderSchema, validatePaymentSchema } from "../../schemas/order.schemas";
 import { AppError } from "../../utils/appError";
 import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, getReportOrderService, readyService, startCookingService, updateCancelOrderService, validatePaymentService } from "./order.service";
 import { responseSuccess } from "../../utils/response";
@@ -152,8 +152,21 @@ export const getOrdersByStatusController = asyncHandler(async (req: AuthRequest,
         throw new AppError("Anda tidak memiliki akses untuk melihat pesanan", 403);
     };
 
+    // validate query status
+    const validatedQuery = getOrderByCategorySchema.safeParse(req.query);
+
+    // if validation failed
+    if (!validatedQuery.success) {
+        throw new AppError("Validasi gagal", 400, validatedQuery.error.flatten().fieldErrors);
+    };
+
+    // filter status based on user role
+    const finalTargetStatus = validatedQuery.data.status.filter((status) => {
+        return targetStatus.includes(status);
+    }) as order_status[];
+
     // get order by status
-    const rawOrders = await getOrdersByStatusService(targetStatus);
+    const rawOrders = await getOrdersByStatusService(finalTargetStatus);
 
     // format order data
     const formattedOrders = rawOrders.map(order => {

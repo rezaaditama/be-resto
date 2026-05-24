@@ -221,6 +221,13 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
                         is_read: false,
                     }
                 }
+            },
+            include: {
+                table: {
+                    select: {
+                        table_number: true
+                    }
+                }
             }
         });
 
@@ -478,9 +485,45 @@ export const completedService = async (orderId: string) => {
     return result;
 };
 
+// // get order by status service
+// export const getOrdersByStatusService = async (statusList: order_status[]) => {
+
+//     // find order by status
+//     return await prisma.orders.findMany({
+//         where: {
+//             status: {
+//                 in: statusList
+//             }
+//         },
+
+//         // include field order items and table
+//         include: {
+//             order_items: {
+//                 include: {
+//                     menu: {
+//                         select: {
+//                             name: true
+//                         }
+//                     }
+//                 }
+//             },
+//             table: {
+//                 select: {
+//                     table_number: true
+//                 }
+//             }
+//         },
+
+//         // order by created at ascending
+//         orderBy: {
+//             created_at: "desc"
+//         }
+//     });
+// };
+
 // get order by status service
 export const getOrdersByStatusService = async (statusList: order_status[]) => {
-
+    
     // find order by status
     return await prisma.orders.findMany({
         where: {
@@ -500,6 +543,8 @@ export const getOrdersByStatusService = async (statusList: order_status[]) => {
                     }
                 }
             },
+
+            // include table
             table: {
                 select: {
                     table_number: true
@@ -509,10 +554,10 @@ export const getOrdersByStatusService = async (statusList: order_status[]) => {
 
         // order by created at ascending
         orderBy: {
-            created_at: "asc"
+            created_at: "desc"
         }
-    });
-};
+    })
+}
 
 // get order by id service
 export const getOrderByIdService = async (orderId: string) => {
@@ -575,7 +620,7 @@ export const getAllMyOrderService = async (userId: string) => {
 
         // order by created at ascending
         orderBy: {
-            created_at: "asc"
+            created_at: "desc"
         }
     });
 };

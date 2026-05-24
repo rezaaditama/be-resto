@@ -1,3 +1,4 @@
+import { order_status } from "@prisma/client";
 import { z } from "zod";
 
 // create order items schema
@@ -39,10 +40,22 @@ export const updateStatusSchema = z.object({
   status: z.enum(["VALIDATED", "COOKING", "READY", "COMPLETED", "CANCELED"])
 });
 
+// get report order schemas
 export const getReportOrderSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD").optional(),
-  
-})
+});
+
+// get order by category schemas
+export const getOrderByCategorySchema = z.object({
+  status: z.string().min(1, "Status wajib diisi").transform((val) => {
+    return val.split(",").map((status) => {
+      return status.trim().toUpperCase() as order_status
+    })
+  })
+});
+
+// export type get order by category schema
+export type GetOrderByCategoryInput = z.infer<typeof getOrderByCategorySchema>;
 
 // export type get report order schema
 export type GetReportOrderInput = z.infer<typeof getReportOrderSchema>;

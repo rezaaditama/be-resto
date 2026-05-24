@@ -25,6 +25,6 @@ export const calculateTax = (amountAfterDiscount: number, taxRate = 0.11): numbe
 };
 
 // calculate grand total
-export const calculateGrandTotal = (amountAfterDiscount: number, taxValue: number, uniqueCode: number): number => {
-    return Math.round(amountAfterDiscount + taxValue + uniqueCode);
+export const calculateGrandTotal = (amountAfterDiscount: number, taxValue: number, uniqueCode?: number): number => {
+    return Math.round(amountAfterDiscount + taxValue + (uniqueCode || 0));
 };
