@@ -17,7 +17,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 // router auth modul
-app.use("/", AuthRouter);
+app.use("/api/auth", AuthRouter);
 
 // router testing
 app.get("/health", (req, res) => {
