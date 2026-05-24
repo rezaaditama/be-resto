@@ -59,7 +59,8 @@ export const getNotificationsByRoleService = async (role: string, userId?: strin
                     )
                     // FILTER 2: Batasi field data yang dikembalikan (Hanya yang kamu minta)
                     .map((notif: any) => ({
-                        tittle: notif.tittle, // Sesuaikan typo database 'tittle'
+                        title: notif.tittle, // Sesuaikan typo database 'tittle'
+                        order_id: notif.order_id,
                         message: notif.message,
                         is_read: notif.is_read,
                         created_at: notif.created_at,
@@ -76,7 +77,7 @@ export const getNotificationsByRoleService = async (role: string, userId?: strin
     // 2. JIKA YANG REQUEST ADALAH STAFF (CASHIER, KITCHEN, dll)
     // =======================================================
     // Jika staff, langsung ambil semua data berdasarkan divisinya
-    return await prisma.notifications.findMany({
+    const notifications = await prisma.notifications.findMany({
         where: {
             target_role: role as any // 'as any' agar bebas dari garis merah TypeScript
         },
@@ -85,13 +86,38 @@ export const getNotificationsByRoleService = async (role: string, userId?: strin
         ],
         select: {
             id: true,
+            order_id: true,
             tittle: true,      
             message: true,     
             is_read: true,     
             created_at: true,  
-            updated_at: true   
+            updated_at: true,
+            order: {
+                select: {
+                    // Masuk lagi ke relasi meja (Sesuaikan kata 'tables' dengan nama relasi di schemamu)
+                    table: { 
+                        select: {
+                            // Sesuaikan kata 'table_number' dengan nama kolom asli di tabel meja
+                            table_number: true 
+                        }
+                    }
+                }
+            }   
         }
     });
+
+    const formattedNotifications = notifications.map((notif) => ({
+        id: notif.id,
+        order_id: notif.order_id,
+        title: notif.tittle, // Ubah dari tittle (database) menjadi title (JSON)
+        message: notif.message,
+        is_read: notif.is_read,
+        created_at: notif.created_at,
+        updated_at: notif.updated_at,
+        table_number: notif.order?.table?.table_number || "Takeaway/Tanpa Meja"
+    }));
+
+    return formattedNotifications;
 };
 
 // Update notification read status service
