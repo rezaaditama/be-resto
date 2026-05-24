@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { authenticateToken } from "../middlewares/auth.middleware";
-import { authorizeRole } from "../middlewares/role.middleware";
-import { createMenuController, deleteMenuController, getAllMenuController, getMenuByIdController, updateMenuController } from "../services/menu-service/menu.controller";
-import { uploadMenuImage } from "../middlewares/upload.middleware";
+import { authenticateToken } from "../../middlewares/auth.middleware";
+import { authorizeRole } from "../../middlewares/role.middleware";
+import { createMenuController, deleteMenuController, getAllMenuController, getMenuByIdController, updateMenuController } from "./menu.controller";
+import { uploadMenuImage } from "../../middlewares/upload.middleware";
 
 const MenuRouter = Router();
 

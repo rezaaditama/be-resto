@@ -1,4 +1,4 @@
-import { createMenuInput, updateMenuInput } from "../../schemas/menu.schemas";
+import { createMenuInput, updateMenuInput } from "./menu.schemas";
 import prisma from "../../lib/prisma";
 import { AppError } from "../../utils/appError";
 

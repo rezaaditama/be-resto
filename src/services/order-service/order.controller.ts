@@ -32,7 +32,7 @@ export const createOrderController = asyncHandler(async (req: AuthRequest, res: 
     // return response success
     return responseSuccess(
         res, 
-        "Pesanan berhasil dibuat, silakan lakukan pembayaran di kasir", 
+        "Pesanan berhasil dibuat", 
         newOrder, 
         201
     );   

@@ -2,7 +2,7 @@ import { asyncHandler } from "../../utils/asyncHandler";
 import { Request, Response } from "express";
 import { createMenuService, deleteMenuService, getAllMenuService, getMenuByIdService, updateMenuService } from "./menu.service";
 import { responseSuccess } from "../../utils/response";
-import { createMenuSchema, getMenuByIdSchema, getMenuFilterSchema, updateMenuSchema } from "../../schemas/menu.schemas";
+import { createMenuSchema, getMenuByIdSchema, getMenuFilterSchema, updateMenuSchema } from "./menu.schemas";
 import { AuthRequest } from "../../types/auth.types";
 import { AppError } from "../../utils/appError";
 import fs from "fs";
