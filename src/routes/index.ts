@@ -1,5 +1,5 @@
 import { Application, Router } from "express"
-import TableRouter from "./table.route";
+import TableRouter from "../services/table-service/table.route";
 // import DiscountRouter from '../services/discount-service/discount.route';
 // import NotifRoute from "../services/notification-service/notification.route";
 import AdminRoute from "./admin.route";

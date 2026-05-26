@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { createTableController, deleteTableController, getAllTablesControler, updateTableController } from "../services/table-service/table.controller";
-import { authenticateToken } from "../middlewares/auth.middleware";
-import { authorizeRole } from "../middlewares/role.middleware";
+import { createTableController, deleteTableController, getAllTablesControler, updateTableController } from "./table.controller";
+import { authenticateToken } from "../../middlewares/auth.middleware";
+import { authorizeRole } from "../../middlewares/role.middleware";
 
 const TableRouter = Router();
 

@@ -1,6 +1,6 @@
 import prisma from '../../lib/prisma';
 import { AppError } from '../../utils/appError';
-import { CreateTableInput, UpdateTableInput } from '../../schemas/table.schemas';
+import { CreateTableInput, UpdateTableInput } from './table.schemas';
 
 // Create tables schema
 export const createTableService = async (data: CreateTableInput) => {

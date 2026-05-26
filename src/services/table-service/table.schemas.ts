@@ -1,7 +1,7 @@
-import { table_status } from "../../generated/prisma";
+import { table_status } from "../../../generated/prisma";
 import { z } from "zod";
-
-export const getTableFilterShcema = z.object({
+  
+export const getTableFilterSchema = z.object({
   status: z.enum(["AVAILABLE", "OCCUPIED", "DIRTY"]).optional(),
   capacity: z.number().optional(),
   table_number: z.string().trim().optional()
