@@ -13,6 +13,26 @@ export const completeCustomerProfileService = async (customerId: string, data: U
         throw new AppError("Customer tidak ditemukan", 404);
     }
 
+    // ─── TAMBAHAN LOGIKA PENANGANAN BUG (CORE ADDRESS) ───────────────
+    if (data.addresses && data.addresses.length > 0) {
+        // Hitung berapa banyak alamat di payload yang diset true
+        const coreAddressesCount = data.addresses.filter(addr => addr.is_core_address === true).length;
+        
+        // 1. Validasi: Jangan izinkan payload memiliki lebih dari satu core address
+        if (coreAddressesCount > 1) {
+            throw new AppError("Hanya boleh memilih satu alamat utama (core address)", 400);
+        }
+
+        // 2. Reset Database: Jika request ini membawa 1 alamat utama baru, 
+        // pastikan semua alamat lama milik customer ini di database dijadikan false terlebih dahulu.
+        if (coreAddressesCount === 1) {
+            await prisma.address.updateMany({ // Sesuaikan 'address' dengan nama model tabel alamat di Prisma-mu
+                where: { customer_id: customerId },
+                data: { is_core_address: false }
+            });
+        }
+    }
+
     // menyiapkan payload update untuk tabel customer
     const updatePayload: any = {};
 
