@@ -97,8 +97,11 @@ export const autoAssignTableController = asyncHandler(async (req: Request, res: 
     });
 });
 
-export const verifyTableIdController = asyncHandler(async (req: Request, res: Response) => {
+export const verifyTableIdController = asyncHandler(async (req: AuthRequest, res: Response) => {
     
+    // check role
+    const role = req.user?.role;
+
     // validation input
     const inputValidation = verifyTableIdSchema.safeParse(req.params);
 
@@ -121,6 +124,14 @@ export const verifyTableIdController = asyncHandler(async (req: Request, res: Re
         // get table by id
         const table = await getTableByIdService(tableId);
 
+        if (table.status !== "AVAILABLE" && role === "GUEST") {
+            throw new AppError(
+                `Maaf, meja ${table.table_number} sedang digunakan, silahkan gunakan meja lain`,
+                400,
+                { code: "TABLE_NOT_AVAILABLE", current_status: table.status }
+            );
+        };
+
         // return table
         return responseSuccess(res, "Meja berhasil diverifikasi", {
             id: tableId,
@@ -130,7 +141,6 @@ export const verifyTableIdController = asyncHandler(async (req: Request, res: Re
         });
 
     } catch (error) {
-        
         if (error instanceof AppError) {
             throw error;
         };

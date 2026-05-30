@@ -173,7 +173,7 @@ export const getTableByIdService = async (tableId: number) => {
 
     // if table not found
     if (!table) {
-        throw new AppError("Meja tidak ditemukan", 404);
+        throw new AppError("Meja tidak ditemukan", 404, {code: "TABLE_NOT_FOUND"});
     };
 
     // return table
