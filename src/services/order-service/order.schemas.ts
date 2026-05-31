@@ -54,6 +54,19 @@ export const getOrderByCategorySchema = z.object({
   })
 });
 
+// swap order item schemas
+export const swapOrderItemSchema = z.object({
+  order_item_id: z.string().uuid("Format ID item pesanan tidak valid"),
+  new_menu_id: z.string().uuid("Format ID menu baru tidak valid"),
+  qty_to_swap: z.number().int("Jumlah harus bilangan bulat").positive().min(1, "Jumlah minimal tukar adalah 1"),
+  notes: z.string().optional(),
+});
+
+// remove order item schemas
+export const removeOrderItemSchema = z.object({
+    order_item_id: z.string().uuid("Format ID item pesanan tidak valid"),
+});
+
 // export type get order by category schema
 export type GetOrderByCategoryInput = z.infer<typeof getOrderByCategorySchema>;
 
@@ -71,3 +84,9 @@ export type CreateItemInput = z.infer<typeof itemSchema>;
 
 // export type create order schema
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+
+// export type swap order item schema
+export type SwapOrderItemInput = z.infer<typeof swapOrderItemSchema>;
+
+// export type remove order item schema
+export type RemoveOrderItemInput = z.infer<typeof removeOrderItemSchema>;

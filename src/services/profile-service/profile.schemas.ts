@@ -7,6 +7,8 @@ export const updateProfileSchema = z.object({
     phone_number: z.string().regex(/^[0-9]+$/, "Nomor telepon harus terdiri dari angka").optional(),
     gender: z.nativeEnum(gender_option, { message: "Gender tidak valid" }).optional(),
     date_of_birth: z.string().optional(), // Frontend mengirimkan YYYY-MM-DD
+    password: z.string().min(8, "Password minimal 8 karakter").regex(/[a-zA-Z]/, "Password harus mengandung setidaknya satu huruf")
+        .regex(/[0-9]/, "Password harus mengandung setidaknya satu angka"),
     addresses: z.array(
         z.object({
             id: z.string().uuid("Format ID alamat tidak valid").optional(), // Ada ID = Update, Tidak ada = Create

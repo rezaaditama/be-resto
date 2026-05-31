@@ -1,6 +1,7 @@
 import prisma from "../../lib/prisma"
 import { AppError } from "../../utils/appError";
 import { UpdateProfileInput } from "./profile.schemas";
+import bcrypt from "bcrypt";
 
 export const completeCustomerProfileService = async (customerId: string, data: UpdateProfileInput) => {
     
@@ -40,6 +41,14 @@ export const completeCustomerProfileService = async (customerId: string, data: U
     if (data.date_of_birth) updatePayload.date_of_birth = new Date(data.date_of_birth);
     if (data.fullname) updatePayload.fullname = data.fullname;
     if (data.phone_number) updatePayload.phone_number = data.phone_number;
+
+    // ─── TAMBAHAN LOGIKA UPDATE PASSWORD DENGAN BCRYPT ───────────────
+    if (data.password) {
+        // Lakukan hashing pada password baru sebelum disimpan ke database
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(data.password, saltRounds);
+        updatePayload.password = hashedPassword;
+    }
     
 
     // membuat Logika Prisma Nested Writes untuk tabel address

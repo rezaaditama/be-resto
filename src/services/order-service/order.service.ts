@@ -800,3 +800,331 @@ export const updateCancelOrderService = async (orderId: string) => {
 
     });
 };
+
+// get substitute menus service (for dropdown)
+export const getSubstituteMenusService = async (targetPrice: number, currentMenuId: string) => {
+    
+    // find available menus with the exact same price
+    return await prisma.menus.findMany({
+        where: {
+            price: targetPrice,
+            id: { not: currentMenuId },
+            is_available: true,
+            deleted_at: null // ensure menu is not deleted
+        },
+        select: {
+            id: true,
+            name: true,
+            price: true,
+            category: true
+        },
+        orderBy: {
+            name: "asc"
+        }
+    });
+};
+
+// swap order item service (tukar menu dengan harga sama)
+export const swapOrderItemService = async (orderId: string, orderItemId: string, newMenuId: string, qtyToSwap: number, newNotes?: string) => {
+    
+    // prisma transaction
+    return await prisma.$transaction(async (tx) => {
+        
+        // find order and include its items
+        const order = await tx.orders.findUnique({
+            where: { id: orderId },
+            include: {
+                order_items: {
+                    include: { menu: true }
+                }
+            }
+        });
+
+        // if order not found
+        if (!order) {
+            throw new AppError("Pesanan tidak ditemukan", 404);
+        }
+
+        // if order cannot be modified
+        if (order.status === "CANCELED" || order.status === "COMPLETED") {
+            throw new AppError(`Akses ditolak! Pesanan yang sudah ${order.status} tidak bisa diubah`, 400);
+        }
+
+        // find the specific order item
+        const oldOrderItem = order.order_items.find(item => item.id === orderItemId);
+        
+        if (!oldOrderItem) {
+            throw new AppError("Detail pesanan tidak ditemukan di dalam order ini", 404);
+        }
+
+        // validate swap quantity
+        if (qtyToSwap <= 0 || qtyToSwap > oldOrderItem.quantity) {
+            throw new AppError("Kuantitas tukar tidak valid", 400);
+        }
+
+        // find the new menu
+        const newMenu = await tx.menus.findUnique({
+            where: { id: newMenuId, deleted_at: null }
+        });
+
+        // validate new menu availability
+        if (!newMenu) {
+            throw new AppError("Menu pengganti tidak ditemukan", 404);
+        }
+        if (!newMenu.is_available) {
+            throw new AppError(`Menu ${newMenu.name} saat ini tidak tersedia`, 400);
+        }
+        if (newMenu.stock !== null && newMenu.stock < qtyToSwap) {
+            throw new AppError(`Stock ${newMenu.name} tidak cukup`, 400);
+        }
+
+        // CRITICAL: validate price must be exactly the same
+        if (newMenu.price.toNumber() !== oldOrderItem.menu!.price.toNumber()) {
+            throw new AppError("Akses ditolak! Harga menu pengganti harus sama persis", 400);
+        }
+
+        // === UPDATE STOCK LOGIC ===
+        
+        // return old menu stock
+        if (oldOrderItem.menu_id) {
+            const updateStockOldMenu = await tx.menus.update({
+                where: { id: oldOrderItem.menu_id },
+                data: { stock: { increment: qtyToSwap } }
+            });
+
+            // if old menu was marked unavailable but now has stock (logic safety)
+            if (updateStockOldMenu.stock !== null && !updateStockOldMenu.is_available && updateStockOldMenu.stock > 0) {
+                await tx.menus.update({
+                    where: { id: oldOrderItem.menu_id },
+                    data: { is_available: true }
+                });
+            }
+        }
+
+        // deduct new menu stock
+        const updateStockNewMenu = await tx.menus.update({
+            where: { id: newMenuId },
+            data: { stock: { decrement: qtyToSwap } }
+        });
+
+        // if new menu stock hits 0, set to unavailable
+        if (updateStockNewMenu.stock !== null && updateStockNewMenu.stock <= 0) {
+            await tx.menus.update({
+                where: { id: newMenuId },
+                data: { is_available: false }
+            });
+        }
+
+        // === SWAP LOGIC ===
+        
+        // check if the new menu already exists in this order (to merge)
+        const existingNewItem = order.order_items.find(item => item.menu_id === newMenuId);
+        
+        // calculate subtotal for the swapped amount
+        const swappedSubTotal = calculateSubTotal(newMenu.price.toNumber(), qtyToSwap);
+
+        // scenario A: Full swap
+        if (qtyToSwap === oldOrderItem.quantity) {
+            if (existingNewItem) {
+                // merge to existing item
+                await tx.order_items.update({
+                    where: { id: existingNewItem.id },
+                    data: {
+                        quantity: existingNewItem.quantity + qtyToSwap,
+                        sub_total: existingNewItem.sub_total.toNumber() + swappedSubTotal
+                    }
+                });
+                // delete the old item
+                await tx.order_items.delete({
+                    where: { id: orderItemId }
+                });
+            } else {
+                // simply change menu_id
+                await tx.order_items.update({
+                    where: { id: orderItemId },
+                    data: { menu_id: newMenuId, 
+                        notes: newNotes || null 
+                    }
+                });
+            }
+        } 
+        // scenario B: Partial swap (Split item)
+        else {
+            const remainingQty = oldOrderItem.quantity - qtyToSwap;
+            const remainingSubTotal = calculateSubTotal(oldOrderItem.menu!.price.toNumber(), remainingQty);
+
+            // update old item's remaining quantity
+            await tx.order_items.update({
+                where: { id: orderItemId },
+                data: {
+                    quantity: remainingQty,
+                    sub_total: remainingSubTotal
+                }
+            });
+
+            if (existingNewItem) {
+                // merge the swapped qty to existing replacement item
+                await tx.order_items.update({
+                    where: { id: existingNewItem.id },
+                    data: {
+                        quantity: existingNewItem.quantity + qtyToSwap,
+                        sub_total: existingNewItem.sub_total.toNumber() + swappedSubTotal
+                    }
+                });
+            } else {
+                // create a new row for the swapped item
+                await tx.order_items.create({
+                    data: {
+                        order_id: orderId,
+                        menu_id: newMenuId,
+                        quantity: qtyToSwap,
+                        sub_total: swappedSubTotal,
+                        notes: newNotes || null // bring the old notes (e.g., "less sugar")
+                    }
+                });
+            }
+        }
+
+        // return updated order
+        return await tx.orders.findUnique({
+            where: { id: orderId },
+            include: {
+                table: { select: { table_number: true } },
+                order_items: {
+                    include: {
+                        menu: {
+                            select: { name: true, price: true }
+                        }
+                    }
+                }
+            }
+        });
+
+    });
+};
+
+// remove/void order item service
+export const removeOrderItemService = async (orderId: string, orderItemId: string) => {
+    
+    return await prisma.$transaction(async (tx) => {
+        
+        // 1. Cari pesanan induk dan itemnya
+        const order = await tx.orders.findUnique({
+            where: { id: orderId },
+            include: { order_items: true }
+        });
+
+        if (!order) throw new AppError("Pesanan tidak ditemukan", 404);
+
+        if (order.status === "CANCELED" || order.status === "COMPLETED") {
+            throw new AppError(`Akses ditolak! Pesanan yang sudah ${order.status} tidak bisa diubah`, 400);
+        }
+
+        // 2. Cari spesifik item yang mau dihapus
+        const targetItem = order.order_items.find(item => item.id === orderItemId);
+        
+        if (!targetItem) {
+            throw new AppError("Detail pesanan tidak ditemukan di dalam nota ini", 404);
+        }
+
+        // 3. Kembalikan stok menu yang dihapus ke dapur
+        if (targetItem.menu_id) {
+            const updatedMenu = await tx.menus.update({
+                where: { id: targetItem.menu_id },
+                data: { stock: { increment: targetItem.quantity } }
+            });
+
+            // Nyalakan is_available jika sebelumnya habis
+            if (updatedMenu.stock !== null && !updatedMenu.is_available && updatedMenu.stock > 0) {
+                await tx.menus.update({
+                    where: { id: targetItem.menu_id },
+                    data: { is_available: true }
+                });
+            }
+        }
+
+        // 4. Hapus item dari database
+        await tx.order_items.delete({
+            where: { id: orderItemId }
+        });
+
+        // 5. Ambil sisa item yang masih ada di nota
+        const remainingItems = await tx.order_items.findMany({
+            where: { order_id: orderId }
+        });
+
+        // --- SKENARIO JIKA SEMUA ITEM DIHAPUS ---
+        if (remainingItems.length === 0) {
+            // Batalkan pesanan dan kosongkan meja otomatis
+            if (order.table_id) {
+                await tx.tables.update({
+                    where: { id: order.table_id },
+                    data: { status: "AVAILABLE" }
+                });
+            }
+            const canceledOrder = await tx.orders.update({
+                where: { id: orderId },
+                data: { status: "CANCELED", total_amount: 0, tax_amount: 0, discount_amount: 0, grand_total_amount: 0 }
+            });
+
+            // Sinkronisasi payment menjadi 0 karena pesanan total dibatalkan
+            await tx.payments.updateMany({
+                where: { order_id: orderId },
+                data: { amount_paid: 0 }
+            });
+
+            return canceledOrder;
+        }
+
+        // --- SKENARIO MENGHITUNG ULANG NOTA ---
+        let newTotalAmount = remainingItems.reduce((sum, item) => sum + item.sub_total.toNumber(), 0);
+        let newDiscountAmount = 0;
+        let finalDiscountId = order.discount_id;
+
+        // Cek apakah diskon masih berlaku setelah total harga turun
+        if (order.discount_id) {
+            const discount = await tx.discount.findUnique({ where: { id: order.discount_id } });
+            
+            // Amankan nilai null dengan menjadikannya 0 jika kosong
+            const minPurchaseRequirement = discount?.min_purches ? discount.min_purches.toNumber() : 0;
+            
+            if (discount && newTotalAmount >= minPurchaseRequirement) {
+                const calc = calculateDiscount(newTotalAmount, discount.value.toNumber());
+                newDiscountAmount = calc.discountAmount;
+            } else {
+                // Hapus diskon jika tidak memenuhi syarat minimal pembelian lagi
+                finalDiscountId = null; 
+            }
+        }
+
+        // Kalkulasi ulang Pajak dan Grand Total
+        const newAmountAfterDiscount = newTotalAmount - newDiscountAmount;
+        const newTaxAmount = calculateTax(newAmountAfterDiscount);
+        const uniqueCode = parseInt(orderId.slice(-3));
+        const newGrandTotal = calculateGrandTotal(newAmountAfterDiscount, newTaxAmount, uniqueCode);
+
+        // Update nota dengan harga baru
+        const updatedOrder = await tx.orders.update({
+            where: { id: orderId },
+            data: {
+                total_amount: newTotalAmount,
+                discount_id: finalDiscountId,
+                discount_amount: newDiscountAmount,
+                tax_amount: newTaxAmount,
+                grand_total_amount: newGrandTotal
+            },
+            include: {
+                order_items: { include: { menu: { select: { name: true, price: true } } } }
+            }
+        });
+
+        // SINKRONISASI TABEL PAYMENTS
+        // Kita pakai updateMany agar tidak error jika pelanggan belum bayar (belum ada di tabel payments)
+        await tx.payments.updateMany({
+            where: { order_id: orderId },
+            data: { amount_paid: newGrandTotal }
+        });
+
+        return updatedOrder;
+    });
+};

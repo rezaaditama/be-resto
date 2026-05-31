@@ -18,5 +18,17 @@ export const registerStaffSchema = z.object({
         "Format nomor telepon tidak valid. Gunakan format 08..., 628..., atau +628...")
 });
 
+// Skema untuk reset password staff oleh admin
+export const updateStaffPasswordSchema = z.object({
+  new_password: z.string().min(8, "Kata sandi baru minimal 8 karakter"),
+  confirm_password: z.string().min(1, "Konfirmasi kata sandi wajib diisi")
+}).refine((data) => data.new_password === data.confirm_password, {
+  message: "Konfirmasi kata sandi harus sama persis dengan kata sandi baru",
+  path: ["confirm_password"], 
+});
+
+
 // export type for register staff schema
 export type RegisterStaffInput = z.infer<typeof registerStaffSchema>;
+
+export type UpdateStaffPasswordInput = z.infer<typeof updateStaffPasswordSchema>;

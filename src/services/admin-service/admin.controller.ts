@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
-import { registerStaffSchema } from "../../schemas/admin.schemas";
+import { registerStaffSchema, updateStaffPasswordSchema } from "../../schemas/admin.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { getAllCustomersService, getAllStaffService, registerStaffService } from "./admin.service";
+import { getAllCustomersService, getAllStaffService, getDetailStaffService, registerStaffService, updateStaffPasswordService } from "./admin.service";
 import { responseSuccess } from "../../utils/response";
 
 // controller register staff
@@ -51,4 +51,48 @@ export const getAllStaffController = asyncHandler(async (req: Request, res: Resp
         count: staffList.length, // Menampilkan total jumlah staff yang terdaftar
         data: staffList
     });
+});
+
+// Get Detail Staff Controller
+export const getDetailStaffController = asyncHandler(async (req: Request, res: Response) => {
+    
+    // get id from params
+    const { id } = req.params;
+
+    // validate id
+    if (typeof id !== "string") {
+        throw new AppError("ID Staff tidak valid", 400);
+    }
+
+    // get detail staff service
+    const staff = await getDetailStaffService(id);
+
+    // response success
+    return responseSuccess(res, "Berhasil mengambil detail staff", staff, 200);
+});
+
+// Update Staff Password Controller
+export const updateStaffPasswordController = asyncHandler(async (req: Request, res: Response) => {
+    
+    // get id from params
+    const { id } = req.params;
+
+    // validate id
+    if (typeof id !== "string") {
+        throw new AppError("ID Staff tidak valid", 400);
+    }
+
+    // input validation by zod
+    const inputValidation = updateStaffPasswordSchema.safeParse(req.body);
+
+    // if validation failed
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    }
+
+    // update staff password service
+    const result = await updateStaffPasswordService(id, inputValidation.data);
+
+    // response success
+    return responseSuccess(res, result.message, null, 200);
 });
