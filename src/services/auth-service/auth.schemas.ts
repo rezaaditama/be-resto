@@ -13,7 +13,7 @@ export const registerCustomerSchema = z.object({
         .regex(/[0-9]/, "Password harus mengandung setidaknya satu angka"),
     confirm_password: z.string(),
     fullname: z.string().min(1, "Nama lengkap harus diisi"),
-    phone_number: z.string().min(10, "Nomor telepon terlalu pendek (minimal 10 angka)").max(15, "Nomor telepon terlalu panjang (maksimal 15 angka)").regex(/^(?:\+62|62|0)8[1-9][0-9]{6,10}$/,
+    phone_number: z.string().min(10, "Nomor telepon terlalu pendek (minimal 10 angka)").max(15, "Nomor telepon terlalu panjang (maksimal 15 angka)").regex(/^(?:\+62|62|0)8[1-9][0-9]{6,12}$/,
         "Format nomor telepon tidak valid. Gunakan format 08..., 628..., atau +628...")
 }).refine((data) => data.password === data.confirm_password, {
     message: "Konfirmasi kata sandi tidak cocok",
