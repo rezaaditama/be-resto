@@ -87,11 +87,10 @@ export const autoAssignTableController = asyncHandler(async (req: Request, res: 
 
     const assignTable = await autoAssignTableService(inputValidation.data.guest);
 
-    const maskedId = Buffer.from(assignTable.id.toString()).toString("base64");
 
     // Kirim response
     return responseSuccess(res, "Meja berhasil ditambahkan", {
-        masked_id: maskedId,
+        table_id: assignTable.id,
         table_number: assignTable.table_number,
         guest: inputValidation.data.guest
     });

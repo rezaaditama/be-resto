@@ -31,7 +31,7 @@ export const verifyTableIdSchema = z.object({
 
 // schema for get table by id
 export const getTableByIdSchema = z.object({
-    id: z.number().min(1, "ID meja harus diisi").positive("ID meja harus berupa angka positif").int("ID meja harus berupa angka")
+    id: z.coerce.number().min(1, "ID meja harus diisi").positive("ID meja harus berupa angka positif").int("ID meja harus berupa angka")
 });
 
 export type CreateTableInput = z.infer<typeof createTableSchema>;
