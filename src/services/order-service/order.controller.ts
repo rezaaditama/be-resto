@@ -300,6 +300,8 @@ export const getMyOrderByIdController = asyncHandler(async (req: AuthRequest, re
         date: order.created_at.toDateString(),
         time: order.created_at.toTimeString(),
         order_items: order.order_items.map(item => ({
+            id: item.id,
+            menu_id: item.menu_id,
             menu_name: item.menu?.name || "Menu sudah tidak tersedia",
             quantity: item.quantity,
             notes: item.notes || "Tidak ada",

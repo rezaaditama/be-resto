@@ -2,28 +2,87 @@ import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { AuthRequest } from "../../types/auth.types";
-import { updateProfileSchema, updateStaffSchema } from "./profile.schemas";
+import { addCustomerAddressSchema, updateCustomerAddressSchema, updateCustomerPasswordSchema, updateProfileSchema, updateStaffSchema } from "./profile.schemas";
 import { responseSuccess } from "../../utils/response";
-import { completeCustomerProfileService, getCustomerAddressesService, getCustomerProfileService, getStaffProfileService, updateStaffService } from "./profile.service";
+import { addCustomerAddressService, completeCustomerProfileService, deleteCustomerAddressService, getCustomerAddressesService, getCustomerProfileService, getStaffProfileService, updateCustomerAddressService, updateCustomerPasswordService, updateStaffService } from "./profile.service";
 
 export const updateProfileController = asyncHandler(async (req: AuthRequest, res: Response) => {
-    
-    // 1. Validasi input menggunakan Zod
+    // Validasi Zod
     const inputValidation = updateProfileSchema.safeParse(req.body);
-
-    // Jika validasi gagal, lempar AppError (persis dengan kodemu sebelumnya)
     if (!inputValidation.success) {
         throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
     }
 
-    // 2. Ambil user ID dari middleware authenticateToken
     const userId = req.user!.id; 
-
-    // 3. Panggil service
     const result = await completeCustomerProfileService(userId, inputValidation.data);
 
-    // 4. Kirim response menggunakan utility responseSuccess
-    return responseSuccess(res, "Profil dan alamat berhasil diperbarui", result);
+    return responseSuccess(res, "Profil berhasil diperbarui", result, 200);
+});
+
+// Controller Update Kata Sandi
+export const updateCustomerPasswordController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    // Validasi Zod
+    const inputValidation = updateCustomerPasswordSchema.safeParse(req.body);
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    }
+
+    const userId = req.user!.id; 
+    const result = await updateCustomerPasswordService(userId, inputValidation.data);
+
+    return responseSuccess(res, result.message, null, 200);
+});
+
+// Controller Tambah Alamat
+export const addCustomerAddressController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    // Validasi Zod
+    const inputValidation = addCustomerAddressSchema.safeParse(req.body);
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    }
+
+    const userId = req.user!.id; 
+    const result = await addCustomerAddressService(userId, inputValidation.data);
+
+    return responseSuccess(res, "Alamat baru berhasil ditambahkan", result, 201);
+});
+
+// Controller Update Alamat
+export const updateCustomerAddressController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    // Ambil ID alamat dari URL parameter
+    const { addressId } = req.params;
+    if (typeof addressId !== "string") {
+        throw new AppError("ID Alamat tidak valid", 400);
+    }
+
+    // Validasi Zod
+    const inputValidation = updateCustomerAddressSchema.safeParse(req.body);
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    }
+
+    const userId = req.user!.id; 
+    const result = await updateCustomerAddressService(userId, addressId, inputValidation.data);
+
+    return responseSuccess(res, "Alamat berhasil diperbarui", result, 200);
+});
+
+// Controller Hapus Alamat
+export const deleteCustomerAddressController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    // Ambil ID alamat dari URL parameter
+    const { addressId } = req.params;
+    if (typeof addressId !== "string") {
+        throw new AppError("ID Alamat tidak valid", 400);
+    }
+
+    const userId = req.user!.id; 
+    const result = await deleteCustomerAddressService(userId, addressId);
+
+    return responseSuccess(res, result.message, null, 200);
 });
 
 export const getProfileController = async (req: AuthRequest, res: Response) => {

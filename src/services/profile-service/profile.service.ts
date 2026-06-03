@@ -5,36 +5,12 @@ import bcrypt from "bcrypt";
 
 export const completeCustomerProfileService = async (customerId: string, data: UpdateProfileInput) => {
     
-    // memastikan customer ada
     const customer = await prisma.customers.findUnique({
         where: { id: customerId }
     });
 
-    if (!customer) {
-        throw new AppError("Customer tidak ditemukan", 404);
-    }
+    if (!customer) throw new AppError("Customer tidak ditemukan", 404);
 
-    // ─── TAMBAHAN LOGIKA PENANGANAN BUG (CORE ADDRESS) ───────────────
-    if (data.addresses && data.addresses.length > 0) {
-        // Hitung berapa banyak alamat di payload yang diset true
-        const coreAddressesCount = data.addresses.filter(addr => addr.is_core_address === true).length;
-        
-        // 1. Validasi: Jangan izinkan payload memiliki lebih dari satu core address
-        if (coreAddressesCount > 1) {
-            throw new AppError("Hanya boleh memilih satu alamat utama (core address)", 400);
-        }
-
-        // 2. Reset Database: Jika request ini membawa 1 alamat utama baru, 
-        // pastikan semua alamat lama milik customer ini di database dijadikan false terlebih dahulu.
-        if (coreAddressesCount === 1) {
-            await prisma.address.updateMany({ // Sesuaikan 'address' dengan nama model tabel alamat di Prisma-mu
-                where: { customer_id: customerId },
-                data: { is_core_address: false }
-            });
-        }
-    }
-
-    // menyiapkan payload update untuk tabel customer
     const updatePayload: any = {};
 
     if (data.gender) updatePayload.gender = data.gender;
@@ -42,59 +18,144 @@ export const completeCustomerProfileService = async (customerId: string, data: U
     if (data.fullname) updatePayload.fullname = data.fullname;
     if (data.phone_number) updatePayload.phone_number = data.phone_number;
 
-    // ─── TAMBAHAN LOGIKA UPDATE PASSWORD DENGAN BCRYPT ───────────────
-    if (data.password) {
-        // Lakukan hashing pada password baru sebelum disimpan ke database
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(data.password, saltRounds);
-        updatePayload.password = hashedPassword;
-    }
-    
-
-    // membuat Logika Prisma Nested Writes untuk tabel address
-    if (data.addresses && data.addresses.length > 0) {
-        // Filter alamat yang TIDAK punya ID (berarti alamat baru)
-        const addressesToCreate = data.addresses
-            .filter(addr => !addr.id)
-            .map(addr => ({ 
-                address_name: addr.address_name,
-                latitude: addr.latitude,
-                longitude: addr.longitude,
-                mark_as: addr.mark_as,
-                is_core_address: addr.is_core_address 
-            }));
-
-        // Filter alamat yang PUNYA ID (berarti update alamat lama)
-        const addressesToUpdate = data.addresses
-            .filter(addr => addr.id)
-            .map(addr => ({
-                where: { id: addr.id },
-                data: { 
-                    address_name: addr.address_name,
-                    latitude: addr.latitude,
-                    longitude: addr.longitude,
-                    mark_as: addr.mark_as,
-                    is_core_address: addr.is_core_address 
-                }
-            }));
-
-        // Masukkan ke payload update
-        updatePayload.address = {
-            ...(addressesToCreate.length > 0 && { create: addressesToCreate }),
-            ...(addressesToUpdate.length > 0 && { update: addressesToUpdate })
-        };
-    }
-
-    // Eksekusi ke database
     const updatedCustomer = await prisma.customers.update({
         where: { id: customerId },
-        data: updatePayload,
-        include: {
-            address: true
-        }
+        data: updatePayload
     });
 
     return updatedCustomer;
+};
+
+export const updateCustomerPasswordService = async (customerId: string, data: any) => {
+    const customer = await prisma.customers.findUnique({
+        where: { id: customerId }
+    });
+
+    if (!customer) throw new AppError("Customer tidak ditemukan", 404);
+
+    // Lapis 1: Cek apakah kata sandi baru dan konfirmasi sama
+    if (data.new_password !== data.confirm_password) {
+        throw new AppError("Konfirmasi kata sandi tidak cocok dengan kata sandi baru", 400);
+    }
+
+    // Lapis 2: Verifikasi kata sandi lama (Keamanan ekstra)
+    const isOldPasswordCorrect = await bcrypt.compare(data.old_password, customer.password);
+    if (!isOldPasswordCorrect) {
+        throw new AppError("Kata sandi lama yang Anda masukkan salah", 401);
+    }
+
+    // Eksekusi update
+    const hashedPassword = await bcrypt.hash(data.new_password, 10);
+    await prisma.customers.update({
+        where: { id: customerId },
+        data: { password: hashedPassword }
+    });
+
+    return { message: "Kata sandi berhasil diperbarui dengan aman" };
+};
+
+// Tambah Alamat Baru
+export const addCustomerAddressService = async (customerId: string, data: any) => {
+    
+    // Jika alamat baru ini diset sebagai alamat utama, matikan alamat utama yang lama
+    if (data.is_core_address === true) {
+        await prisma.address.updateMany({
+            where: { customer_id: customerId },
+            data: { is_core_address: false }
+        });
+    }
+
+    // Buat alamat baru
+    const newAddress = await prisma.address.create({
+        data: {
+            customer_id: customerId,
+            address_name: data.address_name,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            mark_as: data.mark_as,
+            is_core_address: data.is_core_address || false
+        }
+    });
+
+    return newAddress;
+};
+
+// Update Alamat Lama
+export const updateCustomerAddressService = async (customerId: string, addressId: string, data: any) => {
+    
+    // Pastikan alamat tersebut benar-benar milik customer yang sedang login
+    const existingAddress = await prisma.address.findFirst({
+        where: { id: addressId, customer_id: customerId }
+    });
+
+    if (!existingAddress) throw new AppError("Alamat tidak ditemukan atau Anda tidak memiliki akses", 404);
+
+    // Jika alamat ini diubah menjadi alamat utama, matikan yang lain
+    if (data.is_core_address === true) {
+        await prisma.address.updateMany({
+            where: { customer_id: customerId },
+            data: { is_core_address: false }
+        });
+    }
+
+    // Update alamat spesifik
+    const updatedAddress = await prisma.address.update({
+        where: { id: addressId },
+        data: {
+            address_name: data.address_name,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            mark_as: data.mark_as,
+            is_core_address: data.is_core_address
+        }
+    });
+
+    return updatedAddress;
+};
+
+// Hapus Alamat
+export const deleteCustomerAddressService = async (customerId: string, addressId: string) => {
+    
+    // Kita gunakan $transaction agar jika satu proses gagal, semua dibatalkan (aman)
+    return await prisma.$transaction(async (tx) => {
+        
+        // 1. Cari alamat yang mau dihapus untuk mengecek statusnya
+        const addressToDelete = await tx.address.findFirst({
+            where: { id: addressId, customer_id: customerId }
+        });
+
+        if (!addressToDelete) {
+            throw new AppError("Alamat tidak ditemukan", 404);
+        }
+
+        // 2. Eksekusi Hapus Alamat
+        await tx.address.delete({
+            where: { id: addressId }
+        });
+
+        // 3. LOGIKA AUTO-FALLBACK
+        // Jika yang dihapus ternyata adalah alamat utama, kita harus mencari penggantinya
+        if (addressToDelete.is_core_address === true) {
+            
+            // Cari 1 alamat lain yang masih tersisa milik customer ini
+            const fallbackAddress = await tx.address.findFirst({
+                where: { customer_id: customerId },
+                orderBy: { address_name: 'asc' } // Bisa diurutkan bebas, misal berdasarkan nama atau created_at
+            });
+
+            // Jika masih ada sisa alamat lain, otomatis jadikan alamat utama
+            if (fallbackAddress) {
+                await tx.address.update({
+                    where: { id: fallbackAddress.id },
+                    data: { is_core_address: true }
+                });
+            }
+            // (Jika fallbackAddress tidak ada / undefined, berarti alamatnya memang sudah habis / kosong. 
+            // Kita tidak perlu melakukan apa-apa).
+        }
+
+        return { message: "Alamat berhasil dihapus" };
+    });
 };
 
 // Read data profile customer
