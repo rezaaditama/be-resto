@@ -241,6 +241,8 @@ export const getOrderByIdController = asyncHandler(async (req: AuthRequest, res:
         order_type: order.source === "ONLINE" ? "DELIVERY" : "DINE IN",
         total_items: totalItems,
         items: order.order_items.map(item => ({
+            id: item.id,
+            menu_id: item.menu_id,
             menu_name: item.menu!.name,
             quantity: item.quantity,
             notes: item.notes || "Tidak ada",
