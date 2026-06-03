@@ -130,6 +130,7 @@ export const getCustomerAddressesService = async (customerId: string) => {
             customer_id: customerId // Pastikan nama kolom relasinya sesuai di schema.prisma kamu
         },
         select: {
+            id: true,
             customer_id: true,
             address_name: true,
             latitude: true,
