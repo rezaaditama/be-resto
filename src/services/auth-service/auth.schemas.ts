@@ -54,7 +54,7 @@ export const resetPasswordSchema = z.object({
 
 // schema for guest login
 export const guestLoginSchema = z.object({
-    tableId: z.number().min(1, "Table ID harus diisi").positive("Table ID tidak valid")
+    tableId: z.coerce.number().min(1, "Table ID harus diisi").positive("Table ID tidak valid")
 });
 
 // Export type for verify OTP schema
