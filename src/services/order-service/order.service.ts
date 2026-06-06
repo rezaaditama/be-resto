@@ -218,12 +218,28 @@ export const createOrderService = async (data: CreateOrderInput, userId?: string
                 expired_at: new Date(Date.now() + 60 * 60 * 1000),
                 order_items: {create: orderItemsData},
                 notifications: {
-                    create: {
-                        target_role: "CASHIER",
-                        tittle: "Validasi Pembayaran",
-                        message: messagePreview.length > 100 ? messagePreview.substring(0, 97) + '...' : messagePreview,
-                        is_read: false,
-                    }
+                    createMany: {
+                        data: [
+                            {
+                                target_role: null,
+                                tittle: "Pesanan Berhasil, Menunggu validasi.",
+                                message: "Pesanan Berhasil di Pesan, Menunggu Validasi Pembayaran.",
+                                is_read: false,
+                            },
+                            {
+                                target_role: "CASHIER",
+                                tittle: "Validasi Pembayaran",
+                                message: messagePreview.length > 100 ? messagePreview.substring(0, 97) + '...' : messagePreview,
+                                is_read: false,
+                            }
+                        ],
+                    },
+                    // create: {
+                    //     target_role: "CASHIER",
+                    //     tittle: "Validasi Pembayaran",
+                    //     message: messagePreview.length > 100 ? messagePreview.substring(0, 97) + '...' : messagePreview,
+                    //     is_read: false,
+                    // }
                 }
             },
             include: {
