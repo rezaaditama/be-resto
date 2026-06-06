@@ -196,6 +196,7 @@ export const getCustomerAddressesService = async (customerId: string) => {
             address_name: true,
             latitude: true,
             longitude: true,
+            mark_as: true,
             is_core_address: true
         },
         orderBy: {
