@@ -3,8 +3,8 @@ import { AppError } from "../../utils/appError";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { responseSuccess } from "../../utils/response";
 import { AuthRequest } from "../../types/auth.types";
-import { createTableSchema, getTableFilterShcema, updateTableSchema } from "../../schemas/table.schemas";
-import { createTableService, deleteTableService, getAllTablesService, updateTableService } from "./table.service";
+import { autoAssignTableSchema, createTableSchema, getTableByIdSchema, getTableFilterSchema, updateTableSchema, verifyTableIdSchema } from "./table.schemas";
+import { autoAssignTableService, createTableService, deleteTableService, getAllTablesService, getTableByIdService, updateTableService } from "./table.service";
 
 // create table controller
 export const createTableController = asyncHandler(async (req: AuthRequest, res: Response) => {
@@ -26,7 +26,7 @@ export const createTableController = asyncHandler(async (req: AuthRequest, res: 
 // read data tables controller
 export const getAllTablesControler = asyncHandler(async (req: Request, res: Response) => {
 
-    const filters = getTableFilterShcema.parse(req.query)
+    const filters = getTableFilterSchema.parse(req.query)
 
     // panggil service
     const result = await getAllTablesService(filters);
@@ -75,3 +75,102 @@ export const deleteTableController = asyncHandler(async (req: AuthRequest, res: 
     // Kirim response (Data dikosongkan karena sudah dihapus)
     return responseSuccess(res, "Data meja berhasil dihapus");
 });
+
+export const autoAssignTableController = asyncHandler(async (req: Request, res: Response) => {
+    
+    // Validasi input Zod
+    const inputValidation = autoAssignTableSchema.safeParse(req.body);
+
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    };
+
+    const assignTable = await autoAssignTableService(inputValidation.data.guest);
+
+
+    // Kirim response
+    return responseSuccess(res, "Meja berhasil ditambahkan", {
+        table_id: assignTable.id,
+        table_number: assignTable.table_number,
+        guest: inputValidation.data.guest
+    });
+});
+
+export const verifyTableIdController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    // check role
+    const role = req.user?.role;
+
+    // validation input
+    const inputValidation = verifyTableIdSchema.safeParse(req.params);
+
+    // if validation failed
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    };
+
+    try {
+        
+        // decode base64
+        const decodeId = Buffer.from(inputValidation.data.id, 'base64').toString('utf-8');
+        const tableId = parseInt(decodeId, 10);
+
+        // if table id is not a number
+        if (isNaN(tableId)) {
+            throw new AppError("ID meja tidak valid, harus berupa angka", 400);
+        };
+
+        // get table by id
+        const table = await getTableByIdService(tableId);
+
+        if (table.status !== "AVAILABLE" && role === "GUEST") {
+            throw new AppError(
+                `Maaf, meja ${table.table_number} sedang digunakan, silahkan gunakan meja lain`,
+                400,
+                { code: "TABLE_NOT_AVAILABLE", current_status: table.status }
+            );
+        };
+
+        // return table
+        return responseSuccess(res, "Meja berhasil diverifikasi", {
+            id: tableId,
+            table_number: table.table_number,
+            status: table.status,
+            capacity: table.capacity
+        });
+
+    } catch (error) {
+        if (error instanceof AppError) {
+            throw error;
+        };
+        throw new AppError("Gagal memverifikasi meja", 500);
+    }
+});
+
+export const getTableByIdController = asyncHandler(async (req: Request, res: Response) => {
+
+    // validation input
+    const inputValidation = getTableByIdSchema.safeParse(req.params);
+
+    // if validation failed
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    };
+
+    // get table by id
+    const table = await getTableByIdService(inputValidation.data.id);
+
+    // encode table id to base64
+    const maskedId = Buffer.from(table.id.toString()).toString("base64");
+
+    // return table
+    return responseSuccess(res, "Meja berhasil diambil", {
+        id: table.id,
+        masked_id: maskedId,
+        table_number: table.table_number,
+        capacity: table.capacity,
+        status: table.status,
+        created_at: table.created_at,
+        updated_at: table.updated_at
+    });
+})

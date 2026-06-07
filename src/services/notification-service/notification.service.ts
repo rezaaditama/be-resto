@@ -34,41 +34,29 @@ export const getNotificationsByRoleService = async (role: string, userId?: strin
             throw new AppError("ID Customer diperlukan untuk melihat notifikasi", 400);
         }
 
-        // 1. Ambil orderan milik customer ini berserta semua notifikasinya
-        const customerOrdersWithNotifications = await prisma.orders.findMany({
+        // Langsung tembak ke tabel notifications, tidak perlu muter lewat orders
+        const customerNotifications = await prisma.notifications.findMany({
             where: {
-                customer_id: userId 
-            },
-            include: {
-                notifications: true 
+                target_role: null, // KUNCI UTAMA: Hanya ambil notif yang target_role-nya NULL
+                order: {
+                    customer_id: userId // Pastikan notif ini nyambung ke orderan milik customer tersebut
+                }
             },
             orderBy: {
-                created_at: 'desc'
+                created_at: 'desc' // Yang paling baru di atas
             }
         });
 
-        // 2. Olah data untuk memfilter dan membersihkan response
-        const cleanCustomerNotifications = customerOrdersWithNotifications
-            .flatMap(order => {
-                return (order as any).notifications
-                    // FILTER 1: Buang notifikasi verifikasi kasir.
-                    // Kita kecualikan notif yang tittle-nya mengandung kata "Validasi" atau "Verifikasi"
-                    .filter((notif: any) => 
-                        !notif.tittle.toLowerCase().includes("validasi") && 
-                        !notif.tittle.toLowerCase().includes("verifikasi")
-                    )
-                    // FILTER 2: Batasi field data yang dikembalikan (Hanya yang kamu minta)
-                    .map((notif: any) => ({
-                        title: notif.tittle, // Sesuaikan typo database 'tittle'
-                        order_id: notif.order_id,
-                        message: notif.message,
-                        is_read: notif.is_read,
-                        created_at: notif.created_at,
-                        updated_at: notif.updated_at
-                    }));
-            })
-            // 3. Urutkan ulang berdasarkan waktu notifikasi yang terbaru di paling atas
-            .sort((a: any, b: any) => b.created_at.getTime() - a.created_at.getTime());
+        // Format data agar sesuai dengan kebutuhan Frontend
+        const cleanCustomerNotifications = customerNotifications.map((notif: any) => ({
+            id: notif.id,            // Tambahkan ID untuk key mapping di Frontend (React/Flutter)
+            title: notif.tittle,     // Mengubah 'tittle' dari DB menjadi 'title' di JSON
+            order_id: notif.order_id,
+            message: notif.message,
+            is_read: notif.is_read,
+            created_at: notif.created_at,
+            updated_at: notif.updated_at
+        }));
 
         return cleanCustomerNotifications;
     }

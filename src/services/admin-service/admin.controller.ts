@@ -1,15 +1,17 @@
 import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
-import { registerStaffSchema } from "../../schemas/admin.schemas";
+import { registerStaffSchema, updateStaffPasswordSchema } from "../../schemas/admin.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { responseSuccess } from "../../utils/response";
+
+// Import digabung jadi satu agar rapi dan tidak bentrok
 import { 
     getAllCustomersService, 
     getAllStaffService, 
     registerStaffService,
-    getStaffByIdService,
+    getDetailStaffService, // Memakai yang ini untuk get by id
     deleteStaffService,
-    changeStaffPasswordService,
+    updateStaffPasswordService, // Memakai yang ini karena pakai Zod Schema
     getDashboardStats,
     getReportService
 } from "./admin.service";
@@ -27,7 +29,6 @@ export const registerStaffController = asyncHandler(async (req: Request, res: Re
     const result = await registerStaffService(inputValidation.data);
     return responseSuccess(res, "Staff berhasil didaftarkan", result, 201)
 });
-
 
 // =========================================================
 // 2. CONTROLLER GET ALL CUSTOMERS & STAFF (Dengan Query)
@@ -56,19 +57,18 @@ export const getAllStaffController = asyncHandler(async (req: Request, res: Resp
     });
 });
 
-
 // =========================================================
 // 3. CONTROLLER AKSI PEGAWAI (DETAIL, HAPUS, & UBAH PASSWORD)
 // =========================================================
-export const getStaffByIdController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params; 
-    const staff = await getStaffByIdService(id);
-    
-    res.status(200).json({ 
-        success: true, 
-        message: "Berhasil mengambil detail pegawai", 
-        data: staff 
-    });
+export const getDetailStaffController = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (typeof id !== "string") {
+        throw new AppError("ID Staff tidak valid", 400);
+    }
+
+    const staff = await getDetailStaffService(id);
+    return responseSuccess(res, "Berhasil mengambil detail staff", staff, 200);
 });
 
 export const deleteStaffController = asyncHandler(async (req: Request, res: Response) => {
@@ -81,35 +81,28 @@ export const deleteStaffController = asyncHandler(async (req: Request, res: Resp
     });
 });
 
-export const changeStaffPasswordController = asyncHandler(async (req: Request, res: Response) => {
+export const updateStaffPasswordController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { newPassword, confirmPassword } = req.body; 
 
-    if (!newPassword || !confirmPassword) {
-        throw new AppError("Password baru dan konfirmasi password wajib diisi", 400);
-    }
-    if (newPassword !== confirmPassword) {
-        throw new AppError("Konfirmasi password tidak cocok", 400);
+    if (typeof id !== "string") {
+        throw new AppError("ID Staff tidak valid", 400);
     }
 
-    const result = await changeStaffPasswordService(id, newPassword);
-    
-    res.status(200).json({ 
-        success: true, 
-        message: result.message 
-    });
+    const inputValidation = updateStaffPasswordSchema.safeParse(req.body);
+
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    }
+
+    const result = await updateStaffPasswordService(id, inputValidation.data);
+    return responseSuccess(res, result.message, null, 200);
 });
-
 
 // =========================================================
 // 4. CONTROLLER DASHBOARD & LAPORAN (REPORTS)
 // =========================================================
-
 export const getDashboardController = asyncHandler(async (req: Request, res: Response) => {
     const { startDate, endDate } = req.query as any;
-
-    // Jika tanggal kosong, kita biarkan lolos agar diatur otomatis oleh Service.
-
     const stats = await getDashboardStats(startDate, endDate);
     
     res.status(200).json({
@@ -120,28 +113,25 @@ export const getDashboardController = asyncHandler(async (req: Request, res: Res
 });
 
 export const getReportController = asyncHandler(async (req: Request, res: Response) => {
-    // 1. TAMBAHKAN 'month' DI SINI UNTUK MENANGKAP QUERY MINGGUAN
     const { type, reportCategory, startDate, endDate, months, year, month, page, limit } = req.query as any;
     
-    // Konversi parameter 'months' menjadi array angka (untuk filter checkbox bulanan)
     const monthArray = months ? (Array.isArray(months) ? months.map(Number) : [Number(months)]) : undefined;
     
-    // Panggil service dengan parameter yang sudah diformat
     const reportData = await getReportService(
         type, 
-        reportCategory || 'all', // default ke 'all' jika kategori laporan tidak dikirim
+        reportCategory || 'all', 
         startDate, 
         endDate, 
         monthArray, 
         year,
-        month ? Number(month) : undefined,   // 2. MASUKKAN 'month' DI URUTAN KE-7 (Sangat Penting!)
-        page ? Number(page) : 1,             // Urutan ke-8 (Default halaman 1)
-        limit ? Number(limit) : 10           // Urutan ke-9 (Default 10 data)
+        month ? Number(month) : undefined,   
+        page ? Number(page) : 1,             
+        limit ? Number(limit) : 10           
     );
     
     res.status(200).json({
         success: true,
         message: `Berhasil mengambil data laporan ${type || 'umum'}`,
-        ...reportData // Ini akan mengeluarkan { data: [...], meta: { page, limit } }
+        ...reportData 
     });
-});
+}); // <--- INI DIA KURUNG TUTUP YANG TADI HILANG!

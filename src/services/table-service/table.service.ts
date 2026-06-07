@@ -1,6 +1,6 @@
 import prisma from '../../lib/prisma';
 import { AppError } from '../../utils/appError';
-import { CreateTableInput, UpdateTableInput } from '../../schemas/table.schemas';
+import { CreateTableInput, UpdateTableInput } from './table.schemas';
 
 // Create tables schema
 export const createTableService = async (data: CreateTableInput) => {
@@ -117,3 +117,65 @@ export const deleteTableService = async (tableId: number) => {
 
     return null;
 };
+
+// auto assign table service
+export const autoAssignTableService = async (guest: number) => {
+    
+    // get table available
+    const availableTables = await prisma.tables.findMany({
+        where: {
+            status: "AVAILABLE",
+        },
+        orderBy: {
+            capacity: "asc"
+        }
+    });
+
+    // if table not found
+    if (availableTables.length === 0) {
+        throw new AppError("Maaf, saat ini semua meja sedang penuh. Silahkan cek kembali beberapa saat lagi.", 404, {code: "FULL_HOUSE"});
+    };
+
+    // find suitable table
+    const suitableTable = availableTables.find((table) => table.capacity >= guest);
+
+    // if suitable table not found
+    if (!suitableTable) {
+        throw new AppError("Maaf, saat ini tidak ada meja yang cukup besar untuk menampung jumlah tamu Anda.", 404, {code: "NO_SUITABLE_TABLE"});
+    };
+
+    // update table status
+    await prisma.tables.update({
+        where: { id: suitableTable.id },
+        data: {
+            status: "OCCUPIED"
+        }
+    });
+
+    // return table
+    return suitableTable;
+};
+
+export const getTableByIdService = async (tableId: number) => {
+    const table = await prisma.tables.findUnique({
+        where: {
+            id: tableId
+        },
+        select: {
+            id: true,
+            table_number: true,
+            capacity: true,
+            status: true,
+            created_at: true,
+            updated_at: true,
+        }
+    });
+
+    // if table not found
+    if (!table) {
+        throw new AppError("Meja tidak ditemukan", 404, {code: "TABLE_NOT_FOUND"});
+    };
+
+    // return table
+    return table;
+}

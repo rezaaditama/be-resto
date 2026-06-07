@@ -1,9 +1,9 @@
 import { asyncHandler } from "../../utils/asyncHandler";
 import { Response } from "express";
 import { AuthRequest } from "../../types/auth.types";
-import { createOrderSchema, getOrderByCategorySchema, getReportOrderSchema, validatePaymentSchema } from "./order.schemas";
+import { createOrderSchema, getOrderByCategorySchema, getReportOrderSchema, removeOrderItemSchema, swapOrderItemSchema, validatePaymentSchema } from "./order.schemas";
 import { AppError } from "../../utils/appError";
-import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, getReportOrderService, readyService, startCookingService, updateCancelOrderService, validatePaymentService } from "./order.service";
+import { completedService, createOrderService, getAllMyOrderService, getOrderByIdService, getOrdersByStatusService, getReportOrderService, getSubstituteMenusService, readyService, removeOrderItemService, startCookingService, swapOrderItemService, updateCancelOrderService, validatePaymentService } from "./order.service";
 import { responseSuccess } from "../../utils/response";
 import { order_status } from "../../../generated/prisma";
 
@@ -241,6 +241,8 @@ export const getOrderByIdController = asyncHandler(async (req: AuthRequest, res:
         order_type: order.source === "ONLINE" ? "DELIVERY" : "DINE IN",
         total_items: totalItems,
         items: order.order_items.map(item => ({
+            id: item.id,
+            menu_id: item.menu_id,
             menu_name: item.menu!.name,
             quantity: item.quantity,
             notes: item.notes || "Tidak ada",
@@ -300,6 +302,8 @@ export const getMyOrderByIdController = asyncHandler(async (req: AuthRequest, re
         date: order.created_at.toDateString(),
         time: order.created_at.toTimeString(),
         order_items: order.order_items.map(item => ({
+            id: item.id,
+            menu_id: item.menu_id,
             menu_name: item.menu?.name || "Menu sudah tidak tersedia",
             quantity: item.quantity,
             notes: item.notes || "Tidak ada",
@@ -391,6 +395,111 @@ export const updateCancelOrderController = asyncHandler(async (req: AuthRequest,
         res,
         "Pesanan berhasil dibatalkan",
         cancelledOrder,
+        200
+    );
+});
+
+// get substitute menus for dropdown controller
+export const getSubstituteMenusController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    // ambil nilai dari query parameter (contoh URL: ?price=15000&current_menu_id=UUID-LAMA)
+    const { price, current_menu_id } = req.query;
+
+    if (!price || typeof current_menu_id !== "string") {
+        throw new AppError("Parameter price (harga) dan current_menu_id (ID menu saat ini) wajib disertakan di URL", 400);
+    }
+
+    const targetPrice = parseInt(price as string);
+    if (isNaN(targetPrice)) {
+        throw new AppError("Format harga tidak valid", 400);
+    }
+
+    // panggil service
+    const substituteMenus = await getSubstituteMenusService(targetPrice, current_menu_id);
+
+    // return response success
+    return responseSuccess(
+        res,
+        "Daftar menu pengganti berhasil diambil",
+        substituteMenus,
+        200
+    );
+});
+
+
+// swap order item (tukar menu) controller
+export const swapOrderItemController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    // 1. Ambil ID order induk dari parameter URL
+    const { id: orderId } = req.params;
+
+    if (typeof orderId !== "string") {
+        throw new AppError("ID Pesanan tidak valid", 400);
+    }
+
+    // 2. Validasi body request menggunakan schema Zod terbaru kita
+    const validatedData = swapOrderItemSchema.safeParse(req.body);
+
+    if (!validatedData.success) {
+        throw new AppError("Validasi gagal", 400, validatedData.error.flatten().fieldErrors);
+    }
+
+    // 3. Keamanan Tambahan: Pastikan hanya kasir (atau admin/role terkait) yang bisa menukar menu
+    const userRole = req.user!.role;
+    if (userRole !== "CASHIER" && userRole !== "ADMIN") {
+        throw new AppError("Akses ditolak! Hanya Kasir yang diizinkan menukar menu pesanan pelanggan", 403);
+    }
+
+    // 4. Ekstrak data yang sudah divalidasi
+    const { order_item_id, new_menu_id, qty_to_swap, notes } = validatedData.data;
+
+    // 5. Eksekusi service swap item
+    const updatedOrder = await swapOrderItemService(
+        orderId,
+        order_item_id,
+        new_menu_id,
+        qty_to_swap,
+        notes // <--- Lempar notes ke service
+    );
+
+    // 6. Return response success
+    return responseSuccess(
+        res,
+        "Menu pesanan berhasil ditukar",
+        updatedOrder,
+        200
+    );
+});
+
+// remove/void order item controller
+export const removeOrderItemController = asyncHandler(async (req: AuthRequest, res: Response) => {
+    
+    const { id: orderId } = req.params;
+
+    if (typeof orderId !== "string") {
+        throw new AppError("ID Pesanan tidak valid", 400);
+    }
+
+    // Validasi data dari Frontend
+    const validatedData = removeOrderItemSchema.safeParse(req.body);
+
+    if (!validatedData.success) {
+        throw new AppError("Validasi gagal", 400, validatedData.error.flatten().fieldErrors);
+    }
+
+    // Keamanan hak akses
+    const userRole = req.user!.role;
+    if (userRole !== "CASHIER" && userRole !== "ADMIN") {
+        throw new AppError("Akses ditolak! Hanya Kasir yang diizinkan menghapus pesanan pelanggan", 403);
+    }
+
+    // Eksekusi hapus item dan kalkulasi ulang
+    const updatedOrder = await removeOrderItemService(orderId, validatedData.data.order_item_id);
+
+    return responseSuccess(
+        res,
+        "Menu berhasil dihapus dan total nota telah disesuaikan",
+        updatedOrder,
         200
     );
 });

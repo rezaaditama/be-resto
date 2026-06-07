@@ -44,6 +44,7 @@ export const registerStaffService = async (data: RegisterStaffInput) => {
     };
 };
 
+// Gabungan: Fitur Sorting (Jat) + Fitur Address (Teman)
 export const getAllCustomersService = async (query: any) => {
     const { sortBy, sortOrder } = query;
     let sorting: any = { created_at: 'desc' }; 
@@ -63,13 +64,31 @@ export const getAllCustomersService = async (query: any) => {
             date_of_birth: true,
             is_validated: true,
             created_at: true,
-            address: true 
+            address: {
+                where: { is_core_address: true },
+                select: { address_name: true },
+                take: 1
+            }
         }
     });
 
-    return customers;
+    const formattedCustomers = customers.map(customer => {
+        const primaryAddressName = customer.address.length > 0 
+            ? customer.address[0].address_name 
+            : "Belum mengatur alamat";
+
+        const { address, ...customerDataWithoutAddressArray } = customer;
+
+        return {
+            ...customerDataWithoutAddressArray,
+            address_name: primaryAddressName 
+        };
+    });
+
+    return formattedCustomers;
 };
 
+// Fitur Sorting & Filter Staff (Dibersihkan duplikasinya)
 export const getAllStaffService = async (query: any) => {
     const { search, role, status, sortBy, sortOrder } = query;
     const filterWhere: any = {};
@@ -97,6 +116,7 @@ export const getAllStaffService = async (query: any) => {
             email: true,
             fullname: true,
             phone_number: true,
+            gender: true,
             role: true,        
             is_active: true,   
             created_at: true
@@ -106,9 +126,10 @@ export const getAllStaffService = async (query: any) => {
     return allStaff;
 };
 
-export const getStaffByIdService = async (id: string) => {
+// Menggunakan penamaan teman (getDetailStaffService) yang lebih rapi
+export const getDetailStaffService = async (staffId: string) => {
     const staff = await prisma.staff.findUnique({
-        where: { id },
+        where: { id: staffId },
         select: {
             id: true,
             email: true,
@@ -117,52 +138,69 @@ export const getStaffByIdService = async (id: string) => {
             role: true,
             gender: true,
             is_active: true,
-            created_at: true
+            created_at: true,
+            updated_at: true
         }
     });
 
-    if (!staff) throw new AppError("Data pegawai tidak ditemukan", 404);
+    if (!staff) {
+        throw new AppError("Data staff tidak ditemukan", 404);
+    }
+
     return staff;
 };
 
+// Disesuaikan agar memanggil getDetailStaffService
 export const deleteStaffService = async (id: string) => {
-    await getStaffByIdService(id);
+    await getDetailStaffService(id);
     await prisma.staff.delete({ where: { id } });
     return { message: "Data pegawai berhasil dihapus" };
 };
 
-export const changeStaffPasswordService = async (id: string, newPassword: string) => {
-    await getStaffByIdService(id);
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await prisma.staff.update({
-        where: { id },
-        data: { password: hashedPassword }
+// Menggunakan versi teman (updateStaffPasswordService) dengan schema Zod
+export const updateStaffPasswordService = async (staffId: string, data: any) => { 
+    const staff = await prisma.staff.findUnique({
+        where: { id: staffId }
     });
-    return { message: "Kata sandi pegawai berhasil diperbarui" };
+
+    if (!staff) {
+        throw new AppError("Data staff tidak ditemukan", 404);
+    }
+
+    if (data.new_password !== data.confirm_password) {
+        throw new AppError("Konfirmasi kata sandi tidak cocok dengan kata sandi baru", 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(data.new_password, 10);
+
+    await prisma.staff.update({
+        where: { id: staffId },
+        data: {
+            password: hashedPassword
+        }
+    });
+
+    return {
+        message: "Kata sandi staff berhasil diperbarui"
+    };
 };
 
 // =====================================================================
-// 2. DASHBOARD & LAPORAN SERVICE
+// 2. DASHBOARD & LAPORAN SERVICE (Mahakarya Jat)
 // =====================================================================
 
-// Service khusus Dashboard (Dioptimalkan untuk kecepatan)
 export const getDashboardStats = async (startDate?: string, endDate?: string) => {
-    
-    // 1. Buat nilai default: Dari tanggal 1 bulan ini, sampai detik ini
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // 2. Cek apakah ada tanggal dari Insomnia/Frontend. Jika tidak ada, pakai default!
     const start = startDate ? new Date(startDate) : firstDayOfMonth;
     const end = endDate ? new Date(endDate) : now;
     
-    // Ambil semua pesanan dalam rentang waktu
     const orders = await prisma.orders.findMany({
         where: { created_at: { gte: start, lte: end } },
         select: { grand_total_amount: true, status: true }
     });
 
-    // Ambil top 5 menu terlaris
     const topMenusAgg = await prisma.order_items.groupBy({
         by: ['menu_id'],
         where: { order: { created_at: { gte: start, lte: end } } },
@@ -171,7 +209,6 @@ export const getDashboardStats = async (startDate?: string, endDate?: string) =>
         take: 5
     });
 
-    // Ambil detail nama menu berdasarkan menu_id dari agregasi
     const menuDetails = await prisma.menus.findMany({
         where: { id: { in: topMenusAgg.map(m => m.menu_id!).filter(Boolean) } },
         select: { id: true, name: true, price: true, category: true }
@@ -197,30 +234,23 @@ export const getDashboardStats = async (startDate?: string, endDate?: string) =>
     };
 };
 
-// Daftar nama bulan untuk konversi angka ke teks (Bahasa Indonesia)
 const namaBulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-// Service khusus Laporan (Mendukung filter jenis laporan, multi-bulan, dan agregasi data)
 export const getReportService = async (type: string, reportCategory: string, startDate?: string, endDate?: string, months?: number[], year?: string, month?: number, page: number = 1, limit: number = 10) => {
     
     let whereClause: any = {};
     const skip = (page - 1) * limit;
     
-    // ==========================================
-    // 1. LOGIKA RENTANG WAKTU (FILTER DATABASE)
-    // ==========================================
     if (type === 'daily' && startDate && endDate) {
         whereClause.created_at = { gte: new Date(startDate), lte: new Date(endDate) };
     } 
     else if (type === 'weekly' && month && year) {
-        // Dari tanggal 1 sampai akhir bulan untuk minggu 1-5
         whereClause.created_at = { 
             gte: new Date(parseInt(year), month - 1, 1), 
             lte: new Date(parseInt(year), month, 0, 23, 59, 59) 
         };
     } 
     else if (type === 'monthly' && months && months.length > 0 && year) {
-        // Menggunakan checkbox multiple bulan
         whereClause.OR = months.map(m => ({
             created_at: { 
                 gte: new Date(parseInt(year), m - 1, 1), 
@@ -229,13 +259,9 @@ export const getReportService = async (type: string, reportCategory: string, sta
         }));
     }
 
-    // ==========================================
-    // 2. FUNGSI BANTUAN UNTUK PENGELOMPOKAN DATA
-    // ==========================================
-    // Fungsi ini akan menentukan data masuk ke 'laci' yang mana
     const getGroupKey = (date: Date, reportType: string): string => {
         if (reportType === 'monthly') {
-            return namaBulanIndo[date.getMonth()]; // Output: "Januari", "Februari"
+            return namaBulanIndo[date.getMonth()];
         } else if (reportType === 'weekly') {
             const day = date.getDate();
             if (day <= 7) return "Minggu 1";
@@ -244,27 +270,20 @@ export const getReportService = async (type: string, reportCategory: string, sta
             if (day <= 28) return "Minggu 4";
             return "Minggu 5";
         } else {
-            // Output: "01 Apr 2026"
             return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
         }
     };
 
-    // ==========================================
-    // 3. EKSEKUSI BERDASARKAN KATEGORI LAPORAN
-    // ==========================================
     switch (reportCategory) {
         
         case 'orders': {
-            // Ambil data mentah
             const rawOrders = await prisma.orders.findMany({
                 where: whereClause,
                 select: { status: true, created_at: true }
             });
 
-            // Siapkan wadah pengelompokan
             const groupedOrders: Record<string, any> = {};
 
-            // Proses perhitungan
             rawOrders.forEach(order => {
                 const key = getGroupKey(order.created_at, type);
                 
@@ -273,8 +292,6 @@ export const getReportService = async (type: string, reportCategory: string, sta
                 }
                 
                 groupedOrders[key].total_pesanan++;
-                // Sesuaikan 'COMPLETED' / 'CANCELLED' dengan database-mu
-                // Tambahkan "as string" setelah order.status
                 if ((order.status as string) === 'COMPLETED' || (order.status as string) === 'DONE') {
                     groupedOrders[key].pesanan_selesai++;
                 }
@@ -283,10 +300,8 @@ export const getReportService = async (type: string, reportCategory: string, sta
                 }
             });
 
-            // Ubah dari Object ke Array untuk dikirim ke Frontend
             const finalOrdersData = Object.values(groupedOrders);
             
-            // Hitung Grand Total
             const summaryOrders = finalOrdersData.reduce((acc, curr) => {
                 acc.total_semua += curr.total_pesanan;
                 acc.total_selesai += curr.pesanan_selesai;
@@ -328,7 +343,6 @@ export const getReportService = async (type: string, reportCategory: string, sta
         }
 
         case 'menu': {
-            // (Untuk laporan menu bisa kamu biarkan seperti aslinya karena groupBy prisma sudah cukup mewakili produk terlaris)
             const menuReport = await prisma.order_items.groupBy({
                 by: ['menu_id'],
                 where: { order: whereClause },
@@ -343,10 +357,4 @@ export const getReportService = async (type: string, reportCategory: string, sta
             const allReport = await prisma.orders.findMany({
                 where: whereClause,
                 include: { order_items: true },
-                orderBy: { created_at: 'desc' },
-                skip, take: limit
-            });
-            return { data: allReport, meta: { page, limit } };
-        }
-    }
-};
+                orderBy: { created_at: 'desc'

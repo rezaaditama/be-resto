@@ -2,13 +2,15 @@ import { Router } from "express";
 import { authenticateToken } from "../middlewares/auth.middleware";
 import { authorizeRole } from "../middlewares/role.middleware";
 import { updateStaffController } from "../services/profile-service/profile.controller";
+
+// Import digabung jadi satu dan disesuaikan dengan nama fungsi yang baru
 import { 
     getAllCustomersController, 
     getAllStaffController, 
     registerStaffController,
-    getStaffByIdController,
+    getDetailStaffController, // Pengganti getStaffById
     deleteStaffController,
-    changeStaffPasswordController,
+    updateStaffPasswordController, // Pengganti changeStaffPassword
     getDashboardController,
     getReportController
 } from "../services/admin-service/admin.controller";
@@ -29,9 +31,11 @@ AdminRoute.get("/staff", authenticateToken, authorizeRole(["ADMIN"]), getAllStaf
 // ==========================================
 // 3. AKSI SPESIFIK PEGAWAI
 // ==========================================
-AdminRoute.get("/staff/:id", authenticateToken, authorizeRole(["ADMIN"]), getStaffByIdController);
+AdminRoute.get("/staff/:id", authenticateToken, authorizeRole(["ADMIN"]), getDetailStaffController);
 AdminRoute.delete("/staff/:id", authenticateToken, authorizeRole(["ADMIN"]), deleteStaffController);
-AdminRoute.put("/staff/change-password/:id", authenticateToken, authorizeRole(["ADMIN"]), changeStaffPasswordController);
+
+// Menggunakan PATCH sesuai standar temanmu untuk update sebagian data (password)
+AdminRoute.patch("/update-staff-password/:id", authenticateToken, authorizeRole(["ADMIN"]), updateStaffPasswordController);
 
 // Update profil meminjam dari modul profile-service
 AdminRoute.put("/update-staff/:id", authenticateToken, authorizeRole(["ADMIN"]), updateStaffController);
