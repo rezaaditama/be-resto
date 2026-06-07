@@ -106,6 +106,7 @@ export const getAllStaffService = async () => {
             email: true,
             fullname: true,
             phone_number: true,
+            gender: true,
             role: true,        // Menampilkan divisi (CASHIER, KITCHEN, WAITER, dll)
             is_active: true,   // Mengetahui apakah staff aktif atau sudah dinonaktifkan
             created_at: true
