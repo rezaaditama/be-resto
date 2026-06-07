@@ -108,9 +108,7 @@ export const changeStaffPasswordController = asyncHandler(async (req: Request, r
 export const getDashboardController = asyncHandler(async (req: Request, res: Response) => {
     const { startDate, endDate } = req.query as any;
 
-    if (!startDate || !endDate) {
-        throw new AppError("Rentang tanggal (startDate dan endDate) wajib diisi", 400);
-    }
+    // Jika tanggal kosong, kita biarkan lolos agar diatur otomatis oleh Service.
 
     const stats = await getDashboardStats(startDate, endDate);
     
@@ -122,8 +120,8 @@ export const getDashboardController = asyncHandler(async (req: Request, res: Res
 });
 
 export const getReportController = asyncHandler(async (req: Request, res: Response) => {
-    // Tangkap semua parameter yang dibutuhkan untuk filter kompleks
-    const { type, reportCategory, startDate, endDate, months, year, page, limit } = req.query as any;
+    // 1. TAMBAHKAN 'month' DI SINI UNTUK MENANGKAP QUERY MINGGUAN
+    const { type, reportCategory, startDate, endDate, months, year, month, page, limit } = req.query as any;
     
     // Konversi parameter 'months' menjadi array angka (untuk filter checkbox bulanan)
     const monthArray = months ? (Array.isArray(months) ? months.map(Number) : [Number(months)]) : undefined;
@@ -136,8 +134,9 @@ export const getReportController = asyncHandler(async (req: Request, res: Respon
         endDate, 
         monthArray, 
         year,
-        page ? Number(page) : 1, // Default halaman 1
-        limit ? Number(limit) : 10 // Default 10 data per halaman (Pagination)
+        month ? Number(month) : undefined,   // 2. MASUKKAN 'month' DI URUTAN KE-7 (Sangat Penting!)
+        page ? Number(page) : 1,             // Urutan ke-8 (Default halaman 1)
+        limit ? Number(limit) : 10           // Urutan ke-9 (Default 10 data)
     );
     
     res.status(200).json({

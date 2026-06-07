@@ -146,9 +146,15 @@ export const changeStaffPasswordService = async (id: string, newPassword: string
 // =====================================================================
 
 // Service khusus Dashboard (Dioptimalkan untuk kecepatan)
-export const getDashboardStats = async (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+export const getDashboardStats = async (startDate?: string, endDate?: string) => {
+    
+    // 1. Buat nilai default: Dari tanggal 1 bulan ini, sampai detik ini
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // 2. Cek apakah ada tanggal dari Insomnia/Frontend. Jika tidak ada, pakai default!
+    const start = startDate ? new Date(startDate) : firstDayOfMonth;
+    const end = endDate ? new Date(endDate) : now;
     
     // Ambil semua pesanan dalam rentang waktu
     const orders = await prisma.orders.findMany({
@@ -191,72 +197,156 @@ export const getDashboardStats = async (startDate: string, endDate: string) => {
     };
 };
 
-// Service khusus Laporan (Mendukung filter jenis laporan, multi-bulan, dan pagination)
-export const getReportService = async (type: string, reportCategory: string, startDate?: string, endDate?: string, months?: number[], year?: string, page: number = 1, limit: number = 10) => {
+// Daftar nama bulan untuk konversi angka ke teks (Bahasa Indonesia)
+const namaBulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+// Service khusus Laporan (Mendukung filter jenis laporan, multi-bulan, dan agregasi data)
+export const getReportService = async (type: string, reportCategory: string, startDate?: string, endDate?: string, months?: number[], year?: string, month?: number, page: number = 1, limit: number = 10) => {
     
     let whereClause: any = {};
     const skip = (page - 1) * limit;
     
-    // Logika Rentang Waktu
+    // ==========================================
+    // 1. LOGIKA RENTANG WAKTU (FILTER DATABASE)
+    // ==========================================
     if (type === 'daily' && startDate && endDate) {
         whereClause.created_at = { gte: new Date(startDate), lte: new Date(endDate) };
-    } else if (type === 'weekly' && startDate && endDate) {
-        whereClause.created_at = { gte: new Date(startDate), lte: new Date(endDate) };
-    } else if (type === 'monthly' && months && months.length > 0 && year) {
-        // Logika untuk multi-pilih bulan
+    } 
+    else if (type === 'weekly' && month && year) {
+        // Dari tanggal 1 sampai akhir bulan untuk minggu 1-5
+        whereClause.created_at = { 
+            gte: new Date(parseInt(year), month - 1, 1), 
+            lte: new Date(parseInt(year), month, 0, 23, 59, 59) 
+        };
+    } 
+    else if (type === 'monthly' && months && months.length > 0 && year) {
+        // Menggunakan checkbox multiple bulan
         whereClause.OR = months.map(m => ({
-            created_at: {
-                gte: new Date(parseInt(year), m - 1, 1),
-                lte: new Date(parseInt(year), m, 0)
+            created_at: { 
+                gte: new Date(parseInt(year), m - 1, 1), 
+                lte: new Date(parseInt(year), m, 0, 23, 59, 59) 
             }
         }));
     }
 
-    // Logika Kategori Laporan (Semua, Pesanan, Pendapatan, Menu)
+    // ==========================================
+    // 2. FUNGSI BANTUAN UNTUK PENGELOMPOKAN DATA
+    // ==========================================
+    // Fungsi ini akan menentukan data masuk ke 'laci' yang mana
+    const getGroupKey = (date: Date, reportType: string): string => {
+        if (reportType === 'monthly') {
+            return namaBulanIndo[date.getMonth()]; // Output: "Januari", "Februari"
+        } else if (reportType === 'weekly') {
+            const day = date.getDate();
+            if (day <= 7) return "Minggu 1";
+            if (day <= 14) return "Minggu 2";
+            if (day <= 21) return "Minggu 3";
+            if (day <= 28) return "Minggu 4";
+            return "Minggu 5";
+        } else {
+            // Output: "01 Apr 2026"
+            return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+    };
+
+    // ==========================================
+    // 3. EKSEKUSI BERDASARKAN KATEGORI LAPORAN
+    // ==========================================
     switch (reportCategory) {
-        case 'menu':
-            // Agregasi order_items (Laporan Menu)
+        
+        case 'orders': {
+            // Ambil data mentah
+            const rawOrders = await prisma.orders.findMany({
+                where: whereClause,
+                select: { status: true, created_at: true }
+            });
+
+            // Siapkan wadah pengelompokan
+            const groupedOrders: Record<string, any> = {};
+
+            // Proses perhitungan
+            rawOrders.forEach(order => {
+                const key = getGroupKey(order.created_at, type);
+                
+                if (!groupedOrders[key]) {
+                    groupedOrders[key] = { label: key, total_pesanan: 0, pesanan_selesai: 0, pesanan_cancel: 0 };
+                }
+                
+                groupedOrders[key].total_pesanan++;
+                // Sesuaikan 'COMPLETED' / 'CANCELLED' dengan database-mu
+                // Tambahkan "as string" setelah order.status
+                if ((order.status as string) === 'COMPLETED' || (order.status as string) === 'DONE') {
+                    groupedOrders[key].pesanan_selesai++;
+                }
+                if ((order.status as string) === 'CANCELLED') {
+                    groupedOrders[key].pesanan_cancel++;
+                }
+            });
+
+            // Ubah dari Object ke Array untuk dikirim ke Frontend
+            const finalOrdersData = Object.values(groupedOrders);
+            
+            // Hitung Grand Total
+            const summaryOrders = finalOrdersData.reduce((acc, curr) => {
+                acc.total_semua += curr.total_pesanan;
+                acc.total_selesai += curr.pesanan_selesai;
+                acc.total_cancel += curr.pesanan_cancel;
+                return acc;
+            }, { total_semua: 0, total_selesai: 0, total_cancel: 0 });
+
+            return { data: finalOrdersData, summary: summaryOrders };
+        }
+
+        case 'revenue': {
+            const rawRevenue = await prisma.orders.findMany({
+                where: whereClause,
+                select: { grand_total_amount: true, created_at: true }
+            });
+
+            const groupedRevenue: Record<string, any> = {};
+
+            rawRevenue.forEach(order => {
+                const key = getGroupKey(order.created_at, type);
+                
+                if (!groupedRevenue[key]) {
+                    groupedRevenue[key] = { label: key, total_pesanan: 0, total_pendapatan: 0 };
+                }
+                
+                groupedRevenue[key].total_pesanan++;
+                groupedRevenue[key].total_pendapatan += Number(order.grand_total_amount || 0);
+            });
+
+            const finalRevenueData = Object.values(groupedRevenue);
+            
+            const summaryRevenue = finalRevenueData.reduce((acc, curr) => {
+                acc.total_semua_pesanan += curr.total_pesanan;
+                acc.grand_total_pendapatan += curr.total_pendapatan;
+                return acc;
+            }, { total_semua_pesanan: 0, grand_total_pendapatan: 0 });
+
+            return { data: finalRevenueData, summary: summaryRevenue };
+        }
+
+        case 'menu': {
+            // (Untuk laporan menu bisa kamu biarkan seperti aslinya karena groupBy prisma sudah cukup mewakili produk terlaris)
             const menuReport = await prisma.order_items.groupBy({
                 by: ['menu_id'],
                 where: { order: whereClause },
                 _sum: { quantity: true },
                 orderBy: { _sum: { quantity: 'desc' } },
-                skip,
-                take: limit
+                skip, take: limit
             });
             return { data: menuReport, meta: { page, limit } };
+        }
 
-        case 'revenue':
-            // Laporan Pendapatan
-            const revenueReport = await prisma.orders.findMany({
-                where: whereClause,
-                select: { id: true, grand_total_amount: true, created_at: true },
-                orderBy: { created_at: 'desc' },
-                skip,
-                take: limit
-            });
-            return { data: revenueReport, meta: { page, limit } };
-
-        case 'orders':
-            // Laporan Total Pesanan
-            const ordersReport = await prisma.orders.findMany({
-                where: whereClause,
-                select: { id: true, status: true, created_at: true },
-                orderBy: { created_at: 'desc' },
-                skip,
-                take: limit
-            });
-            return { data: ordersReport, meta: { page, limit } };
-
-        default:
-            // Semua Laporan
+        default: {
             const allReport = await prisma.orders.findMany({
                 where: whereClause,
                 include: { order_items: true },
                 orderBy: { created_at: 'desc' },
-                skip,
-                take: limit
+                skip, take: limit
             });
             return { data: allReport, meta: { page, limit } };
+        }
     }
 };
