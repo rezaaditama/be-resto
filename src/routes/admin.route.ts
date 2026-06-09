@@ -12,7 +12,7 @@ import {
     deleteStaffController,
     updateStaffPasswordController, // Pengganti changeStaffPassword
     getDashboardController,
-    getReportController
+    // getReportController
 } from "../services/admin-service/admin.controller";
 
 const AdminRoute = Router();
@@ -44,6 +44,6 @@ AdminRoute.put("/update-staff/:id", authenticateToken, authorizeRole(["ADMIN"]),
 // 4. DASHBOARD & LAPORAN
 // ==========================================
 AdminRoute.get("/dashboard", authenticateToken, authorizeRole(["ADMIN"]), getDashboardController);
-AdminRoute.get("/reports", authenticateToken, authorizeRole(["ADMIN"]), getReportController);
+// AdminRoute.get("/reports", authenticateToken, authorizeRole(["ADMIN"]), getReportController);
 
 export default AdminRoute;
