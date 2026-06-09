@@ -219,6 +219,8 @@ export const getOrderByIdController = asyncHandler(async (req: AuthRequest, res:
 
     // validate user role access
     const roleAccess: Record<string, order_status[]> = {
+        GUEST: ["PENDING", "VALIDATED", "COOKING", "READY", "COMPLETED", "CANCELED"],
+        KIOSK_SYSTEM: ["PENDING", "VALIDATED", "COOKING", "READY", "COMPLETED", "CANCELED"],
         CASHIER: ["PENDING", "VALIDATED", "COOKING", "READY", "COMPLETED", "CANCELED"],
         WAITER: ["COOKING", "READY"],
         KITCHEN: ["VALIDATED", "COOKING", "READY"]
