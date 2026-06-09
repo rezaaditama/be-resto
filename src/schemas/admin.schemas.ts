@@ -27,6 +27,10 @@ export const updateStaffPasswordSchema = z.object({
   path: ["confirm_password"], 
 });
 
+export const deleteStaffSchema = z.object({
+    id: z.string().uuid("ID Staff tidak valid"),
+});
+
 
 // export type for register staff schema
 export type RegisterStaffInput = z.infer<typeof registerStaffSchema>;

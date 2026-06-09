@@ -10,7 +10,7 @@ OrderRouter.get("/my-order", authenticateToken, authorizeRole(["CUSTOMER"]), get
 OrderRouter.get("/report", authenticateToken, authorizeRole(["CASHIER"]), getReportOrderController);
 OrderRouter.get("/substitutes", authenticateToken, authorizeRole(["CASHIER"]), getSubstituteMenusController);
 OrderRouter.get("/my-order/:id", authenticateToken, authorizeRole(["CUSTOMER"]), getMyOrderByIdController);
-OrderRouter.get("/:id", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrderByIdController);
+OrderRouter.get("/:id", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN", "KIOSK_SYSTEM", "GUEST"]), getOrderByIdController);
 OrderRouter.get("/", authenticateToken, authorizeRole(["CASHIER", "WAITER", "KITCHEN"]), getOrdersByStatusController);
 OrderRouter.patch("/:id/validate-payment", authenticateToken, authorizeRole(["CASHIER"]), validatePaymentController);
 OrderRouter.patch("/:id/start-cooking", authenticateToken, authorizeRole(["KITCHEN"]), startCookingController);

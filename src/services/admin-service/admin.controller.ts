@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AppError } from "../../utils/appError";
-import { registerStaffSchema, updateStaffPasswordSchema } from "../../schemas/admin.schemas";
+import { deleteStaffSchema, registerStaffSchema, updateStaffPasswordSchema } from "../../schemas/admin.schemas";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { responseSuccess } from "../../utils/response";
 
@@ -13,7 +13,7 @@ import {
     deleteStaffService,
     updateStaffPasswordService, // Memakai yang ini karena pakai Zod Schema
     getDashboardStats,
-    getReportService
+    // getReportService
 } from "./admin.service";
 
 // =========================================================
@@ -72,13 +72,15 @@ export const getDetailStaffController = asyncHandler(async (req: Request, res: R
 });
 
 export const deleteStaffController = asyncHandler(async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const result = await deleteStaffService(id);
-    
-    res.status(200).json({ 
-        success: true, 
-        message: result.message 
-    });
+
+    const inputValidation = deleteStaffSchema.safeParse(req.params);
+
+    if (!inputValidation.success) {
+        throw new AppError("Validasi gagal", 400, inputValidation.error.flatten().fieldErrors);
+    }
+
+    const result = await deleteStaffService(inputValidation.data.id);
+    return responseSuccess(res, result.message, null, 200);
 });
 
 export const updateStaffPasswordController = asyncHandler(async (req: Request, res: Response) => {
@@ -112,26 +114,26 @@ export const getDashboardController = asyncHandler(async (req: Request, res: Res
     });
 });
 
-export const getReportController = asyncHandler(async (req: Request, res: Response) => {
-    const { type, reportCategory, startDate, endDate, months, year, month, page, limit } = req.query as any;
+// export const getReportController = asyncHandler(async (req: Request, res: Response) => {
+//     const { type, reportCategory, startDate, endDate, months, year, month, page, limit } = req.query as any;
     
-    const monthArray = months ? (Array.isArray(months) ? months.map(Number) : [Number(months)]) : undefined;
+//     const monthArray = months ? (Array.isArray(months) ? months.map(Number) : [Number(months)]) : undefined;
     
-    const reportData = await getReportService(
-        type, 
-        reportCategory || 'all', 
-        startDate, 
-        endDate, 
-        monthArray, 
-        year,
-        month ? Number(month) : undefined,   
-        page ? Number(page) : 1,             
-        limit ? Number(limit) : 10           
-    );
+//     const reportData = await getReportService(
+//         type, 
+//         reportCategory || 'all', 
+//         startDate, 
+//         endDate, 
+//         monthArray, 
+//         year,
+//         month ? Number(month) : undefined,   
+//         page ? Number(page) : 1,             
+//         limit ? Number(limit) : 10           
+//     );
     
-    res.status(200).json({
-        success: true,
-        message: `Berhasil mengambil data laporan ${type || 'umum'}`,
-        ...reportData 
-    });
-}); // <--- INI DIA KURUNG TUTUP YANG TADI HILANG!
+//     res.status(200).json({
+//         success: true,
+//         message: `Berhasil mengambil data laporan ${type || 'umum'}`,
+//         ...reportData 
+//     });
+// }); // <--- INI DIA KURUNG TUTUP YANG TADI HILANG!
