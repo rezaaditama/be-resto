@@ -3,10 +3,7 @@ import { RegisterStaffInput } from "../../schemas/admin.schemas";
 import { AppError } from "../../utils/appError";
 import bcrypt from "bcrypt";
 
-// =====================================================================
-// 1. MANAJEMEN STAFF & CUSTOMER
-// =====================================================================
-
+// MANAJEMEN STAFF & CUSTOMER
 export const registerStaffService = async (data: RegisterStaffInput) => {
     const normalizedEmail = data.email.toLowerCase();
     
@@ -185,10 +182,7 @@ export const updateStaffPasswordService = async (staffId: string, data: any) => 
     };
 };
 
-// =====================================================================
-// 2. DASHBOARD & LAPORAN SERVICE (Mahakarya Jat)
-// =====================================================================
-
+// DASHBOARD & LAPORAN SERVICE 
 export const getDashboardStats = async (startDate?: string, endDate?: string) => {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -234,127 +228,133 @@ export const getDashboardStats = async (startDate?: string, endDate?: string) =>
     };
 };
 
-// const namaBulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const namaBulanIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-// export const getReportService = async (type: string, reportCategory: string, startDate?: string, endDate?: string, months?: number[], year?: string, month?: number, page: number = 1, limit: number = 10) => {
+export const getReportService = async (type: string, reportCategory: string, startDate?: string, endDate?: string, months?: number[], year?: string, month?: number, page: number = 1, limit: number = 10) => {
     
-//     let whereClause: any = {};
-//     const skip = (page - 1) * limit;
+    let whereClause: any = {};
+    const skip = (page - 1) * limit;
     
-//     if (type === 'daily' && startDate && endDate) {
-//         whereClause.created_at = { gte: new Date(startDate), lte: new Date(endDate) };
-//     } 
-//     else if (type === 'weekly' && month && year) {
-//         whereClause.created_at = { 
-//             gte: new Date(parseInt(year), month - 1, 1), 
-//             lte: new Date(parseInt(year), month, 0, 23, 59, 59) 
-//         };
-//     } 
-//     else if (type === 'monthly' && months && months.length > 0 && year) {
-//         whereClause.OR = months.map(m => ({
-//             created_at: { 
-//                 gte: new Date(parseInt(year), m - 1, 1), 
-//                 lte: new Date(parseInt(year), m, 0, 23, 59, 59) 
-//             }
-//         }));
-//     }
+    if (type === 'daily' && startDate && endDate) {
+        whereClause.created_at = { gte: new Date(startDate), lte: new Date(endDate) };
+    } 
+    else if (type === 'weekly' && month && year) {
+        whereClause.created_at = { 
+            gte: new Date(parseInt(year), month - 1, 1), 
+            lte: new Date(parseInt(year), month, 0, 23, 59, 59) 
+        };
+    } 
+    else if (type === 'monthly' && months && months.length > 0 && year) {
+        whereClause.OR = months.map(m => ({
+            created_at: { 
+                gte: new Date(parseInt(year), m - 1, 1), 
+                lte: new Date(parseInt(year), m, 0, 23, 59, 59) 
+            }
+        }));
+    }
 
-//     const getGroupKey = (date: Date, reportType: string): string => {
-//         if (reportType === 'monthly') {
-//             return namaBulanIndo[date.getMonth()];
-//         } else if (reportType === 'weekly') {
-//             const day = date.getDate();
-//             if (day <= 7) return "Minggu 1";
-//             if (day <= 14) return "Minggu 2";
-//             if (day <= 21) return "Minggu 3";
-//             if (day <= 28) return "Minggu 4";
-//             return "Minggu 5";
-//         } else {
-//             return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-//         }
-//     };
+    const getGroupKey = (date: Date, reportType: string): string => {
+        if (reportType === 'monthly') {
+            return namaBulanIndo[date.getMonth()];
+        } else if (reportType === 'weekly') {
+            const day = date.getDate();
+            if (day <= 7) return "Minggu 1";
+            if (day <= 14) return "Minggu 2";
+            if (day <= 21) return "Minggu 3";
+            if (day <= 28) return "Minggu 4";
+            return "Minggu 5";
+        } else {
+            return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+    };
 
-//     switch (reportCategory) {
+    switch (reportCategory) {
         
-//         case 'orders': {
-//             const rawOrders = await prisma.orders.findMany({
-//                 where: whereClause,
-//                 select: { status: true, created_at: true }
-//             });
+        case 'orders': {
+            const rawOrders = await prisma.orders.findMany({
+                where: whereClause,
+                select: { status: true, created_at: true }
+            });
 
-//             const groupedOrders: Record<string, any> = {};
+            const groupedOrders: Record<string, any> = {};
 
-//             rawOrders.forEach(order => {
-//                 const key = getGroupKey(order.created_at, type);
+            rawOrders.forEach(order => {
+                const key = getGroupKey(order.created_at, type);
                 
-//                 if (!groupedOrders[key]) {
-//                     groupedOrders[key] = { label: key, total_pesanan: 0, pesanan_selesai: 0, pesanan_cancel: 0 };
-//                 }
+                if (!groupedOrders[key]) {
+                    groupedOrders[key] = { label: key, total_pesanan: 0, pesanan_selesai: 0, pesanan_cancel: 0 };
+                }
                 
-//                 groupedOrders[key].total_pesanan++;
-//                 if ((order.status as string) === 'COMPLETED' || (order.status as string) === 'DONE') {
-//                     groupedOrders[key].pesanan_selesai++;
-//                 }
-//                 if ((order.status as string) === 'CANCELLED') {
-//                     groupedOrders[key].pesanan_cancel++;
-//                 }
-//             });
+                groupedOrders[key].total_pesanan++;
+                if ((order.status as string) === 'COMPLETED' || (order.status as string) === 'DONE') {
+                    groupedOrders[key].pesanan_selesai++;
+                }
+                if ((order.status as string) === 'CANCELLED') {
+                    groupedOrders[key].pesanan_cancel++;
+                }
+            });
 
-//             const finalOrdersData = Object.values(groupedOrders);
+            const finalOrdersData = Object.values(groupedOrders);
             
-//             const summaryOrders = finalOrdersData.reduce((acc, curr) => {
-//                 acc.total_semua += curr.total_pesanan;
-//                 acc.total_selesai += curr.pesanan_selesai;
-//                 acc.total_cancel += curr.pesanan_cancel;
-//                 return acc;
-//             }, { total_semua: 0, total_selesai: 0, total_cancel: 0 });
+            const summaryOrders = finalOrdersData.reduce((acc, curr) => {
+                acc.total_semua += curr.total_pesanan;
+                acc.total_selesai += curr.pesanan_selesai;
+                acc.total_cancel += curr.pesanan_cancel;
+                return acc;
+            }, { total_semua: 0, total_selesai: 0, total_cancel: 0 });
 
-//             return { data: finalOrdersData, summary: summaryOrders };
-//         }
+            return { data: finalOrdersData, summary: summaryOrders };
+        }
 
-//         case 'revenue': {
-//             const rawRevenue = await prisma.orders.findMany({
-//                 where: whereClause,
-//                 select: { grand_total_amount: true, created_at: true }
-//             });
+        case 'revenue': {
+            const rawRevenue = await prisma.orders.findMany({
+                where: whereClause,
+                select: { grand_total_amount: true, created_at: true }
+            });
 
-//             const groupedRevenue: Record<string, any> = {};
+            const groupedRevenue: Record<string, any> = {};
 
-//             rawRevenue.forEach(order => {
-//                 const key = getGroupKey(order.created_at, type);
+            rawRevenue.forEach(order => {
+                const key = getGroupKey(order.created_at, type);
                 
-//                 if (!groupedRevenue[key]) {
-//                     groupedRevenue[key] = { label: key, total_pesanan: 0, total_pendapatan: 0 };
-//                 }
+                if (!groupedRevenue[key]) {
+                    groupedRevenue[key] = { label: key, total_pesanan: 0, total_pendapatan: 0 };
+                }
                 
-//                 groupedRevenue[key].total_pesanan++;
-//                 groupedRevenue[key].total_pendapatan += Number(order.grand_total_amount || 0);
-//             });
+                groupedRevenue[key].total_pesanan++;
+                groupedRevenue[key].total_pendapatan += Number(order.grand_total_amount || 0);
+            });
 
-//             const finalRevenueData = Object.values(groupedRevenue);
+            const finalRevenueData = Object.values(groupedRevenue);
             
-//             const summaryRevenue = finalRevenueData.reduce((acc, curr) => {
-//                 acc.total_semua_pesanan += curr.total_pesanan;
-//                 acc.grand_total_pendapatan += curr.total_pendapatan;
-//                 return acc;
-//             }, { total_semua_pesanan: 0, grand_total_pendapatan: 0 });
+            const summaryRevenue = finalRevenueData.reduce((acc, curr) => {
+                acc.total_semua_pesanan += curr.total_pesanan;
+                acc.grand_total_pendapatan += curr.total_pendapatan;
+                return acc;
+            }, { total_semua_pesanan: 0, grand_total_pendapatan: 0 });
 
-//             return { data: finalRevenueData, summary: summaryRevenue };
-//         }
+            return { data: finalRevenueData, summary: summaryRevenue };
+        }
 
-//         case 'menu': {
-//             const menuReport = await prisma.order_items.groupBy({
-//                 by: ['menu_id'],
-//                 where: { order: whereClause },
-//                 _sum: { quantity: true },
-//                 orderBy: { _sum: { quantity: 'desc' } },
-//                 skip, take: limit
-//             });
-//             return { data: menuReport, meta: { page, limit } };
-//         }
+        case 'menu': {
+            const menuReport = await prisma.order_items.groupBy({
+                by: ['menu_id'],
+                where: { order: whereClause },
+                _sum: { quantity: true },
+                orderBy: { _sum: { quantity: 'desc' } },
+                skip, take: limit
+            });
+            return { data: menuReport, meta: { page, limit } };
+        }
 
-//         default: {
-//             const allReport = await prisma.orders.findMany({
-//                 where: whereClause,
-//                 include: { order_items: true },
-//                 orderBy: { created_at: 'desc'
+        default: {
+            const allReport = await prisma.orders.findMany({
+                where: whereClause,
+                include: { order_items: true },
+                orderBy: { created_at: 'desc' },
+                skip, take: limit
+            });
+            return { data: allReport, meta: { page, limit } };
+        }
+    }
+};

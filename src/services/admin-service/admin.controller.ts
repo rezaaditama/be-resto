@@ -9,16 +9,14 @@ import {
     getAllCustomersService, 
     getAllStaffService, 
     registerStaffService,
-    getDetailStaffService, // Memakai yang ini untuk get by id
+    getDetailStaffService, 
     deleteStaffService,
-    updateStaffPasswordService, // Memakai yang ini karena pakai Zod Schema
+    updateStaffPasswordService, 
     getDashboardStats,
-    // getReportService
+    getReportService 
 } from "./admin.service";
 
-// =========================================================
-// 1. CONTROLLER REGISTER STAFF
-// =========================================================
+// CONTROLLER REGISTER STAFF
 export const registerStaffController = asyncHandler(async (req: Request, res: Response) => {
     const inputValidation = registerStaffSchema.safeParse(req.body);
 
@@ -30,9 +28,7 @@ export const registerStaffController = asyncHandler(async (req: Request, res: Re
     return responseSuccess(res, "Staff berhasil didaftarkan", result, 201)
 });
 
-// =========================================================
-// 2. CONTROLLER GET ALL CUSTOMERS & STAFF (Dengan Query)
-// =========================================================
+// CONTROLLER GET ALL CUSTOMERS & STAFF (Dengan Query)
 export const getAllCustomersController = asyncHandler(async (req: Request, res: Response) => {
     const queryParams = req.query;
     const customers = await getAllCustomersService(queryParams);
@@ -57,9 +53,7 @@ export const getAllStaffController = asyncHandler(async (req: Request, res: Resp
     });
 });
 
-// =========================================================
-// 3. CONTROLLER AKSI PEGAWAI (DETAIL, HAPUS, & UBAH PASSWORD)
-// =========================================================
+// CONTROLLER AKSI PEGAWAI (DETAIL, HAPUS, & UBAH PASSWORD)
 export const getDetailStaffController = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
 
@@ -100,9 +94,7 @@ export const updateStaffPasswordController = asyncHandler(async (req: Request, r
     return responseSuccess(res, result.message, null, 200);
 });
 
-// =========================================================
-// 4. CONTROLLER DASHBOARD & LAPORAN (REPORTS)
-// =========================================================
+// CONTROLLER DASHBOARD & LAPORAN (REPORTS)
 export const getDashboardController = asyncHandler(async (req: Request, res: Response) => {
     const { startDate, endDate } = req.query as any;
     const stats = await getDashboardStats(startDate, endDate);
@@ -114,26 +106,27 @@ export const getDashboardController = asyncHandler(async (req: Request, res: Res
     });
 });
 
-// export const getReportController = asyncHandler(async (req: Request, res: Response) => {
-//     const { type, reportCategory, startDate, endDate, months, year, month, page, limit } = req.query as any;
+// Seluruh blok getReportController sudah diaktifkan kembali!
+export const getReportController = asyncHandler(async (req: Request, res: Response) => {
+    const { type, reportCategory, startDate, endDate, months, year, month, page, limit } = req.query as any;
     
-//     const monthArray = months ? (Array.isArray(months) ? months.map(Number) : [Number(months)]) : undefined;
+    const monthArray = months ? (Array.isArray(months) ? months.map(Number) : [Number(months)]) : undefined;
     
-//     const reportData = await getReportService(
-//         type, 
-//         reportCategory || 'all', 
-//         startDate, 
-//         endDate, 
-//         monthArray, 
-//         year,
-//         month ? Number(month) : undefined,   
-//         page ? Number(page) : 1,             
-//         limit ? Number(limit) : 10           
-//     );
+    const reportData = await getReportService(
+        type, 
+        reportCategory || 'all', 
+        startDate, 
+        endDate, 
+        monthArray, 
+        year,
+        month ? Number(month) : undefined,   
+        page ? Number(page) : 1,             
+        limit ? Number(limit) : 10           
+    );
     
-//     res.status(200).json({
-//         success: true,
-//         message: `Berhasil mengambil data laporan ${type || 'umum'}`,
-//         ...reportData 
-//     });
-// }); // <--- INI DIA KURUNG TUTUP YANG TADI HILANG!
+    res.status(200).json({
+        success: true,
+        message: `Berhasil mengambil data laporan ${type || 'umum'}`,
+        ...reportData 
+    });
+});
