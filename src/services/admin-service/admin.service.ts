@@ -3,10 +3,7 @@ import { RegisterStaffInput } from "../../schemas/admin.schemas";
 import { AppError } from "../../utils/appError";
 import bcrypt from "bcrypt";
 
-// =====================================================================
-// 1. MANAJEMEN STAFF & CUSTOMER
-// =====================================================================
-
+// MANAJEMEN STAFF & CUSTOMER
 export const registerStaffService = async (data: RegisterStaffInput) => {
     const normalizedEmail = data.email.toLowerCase();
     
@@ -185,10 +182,7 @@ export const updateStaffPasswordService = async (staffId: string, data: any) => 
     };
 };
 
-// =====================================================================
-// 2. DASHBOARD & LAPORAN SERVICE (Mahakarya Jat)
-// =====================================================================
-
+// DASHBOARD & LAPORAN SERVICE 
 export const getDashboardStats = async (startDate?: string, endDate?: string) => {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -357,4 +351,10 @@ export const getReportService = async (type: string, reportCategory: string, sta
             const allReport = await prisma.orders.findMany({
                 where: whereClause,
                 include: { order_items: true },
-                orderBy: { created_at: 'desc'}
+                orderBy: { created_at: 'desc' },
+                skip, take: limit
+            });
+            return { data: allReport, meta: { page, limit } };
+        }
+    }
+};
