@@ -102,7 +102,7 @@ export const getNotificationsByRoleService = async (role: string, userId?: strin
         is_read: notif.is_read,
         created_at: notif.created_at,
         updated_at: notif.updated_at,
-        table_number: notif.order?.table?.table_number || "Takeaway/Tanpa Meja"
+        table_number: notif.order?.table?.table_number || "Takeaway"
     }));
 
     return formattedNotifications;

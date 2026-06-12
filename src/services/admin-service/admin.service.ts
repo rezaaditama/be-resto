@@ -357,4 +357,4 @@ export const getReportService = async (type: string, reportCategory: string, sta
             const allReport = await prisma.orders.findMany({
                 where: whereClause,
                 include: { order_items: true },
-                orderBy: { created_at: 'desc'
+                orderBy: { created_at: 'desc'}
