@@ -185,19 +185,74 @@ export const updateStaffPasswordService = async (staffId: string, data: any) => 
 // DASHBOARD & LAPORAN SERVICE 
 export const getDashboardStats = async (startDate?: string, endDate?: string) => {
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const start = startDate ? new Date(startDate) : firstDayOfMonth;
-    const end = endDate ? new Date(endDate) : now;
-    
+    // ==========================================
+    // 1. FIX: Normalisasi Jam pada Rentang Waktu
+    // ==========================================
+    const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
+    start.setHours(0, 0, 0, 0); // Mulai dari jam 00:00:00
+
+    const end = endDate ? new Date(endDate) : new Date();
+    end.setHours(23, 59, 59, 999); // Berakhir di jam 23:59:59
+
+    // ==========================================
+    // 2. Ambil Semua Pesanan Aktif
+    // ==========================================
     const orders = await prisma.orders.findMany({
-        where: { created_at: { gte: start, lte: end } },
-        select: { grand_total_amount: true, status: true }
+        where: { 
+            created_at: { gte: start, lte: end },
+            status: { not: 'CANCELED' } // Pesanan batal tidak dihitung sebagai total order
+        },
+        select: { created_at: true, grand_total_amount: true, status: true }
     });
 
+    // ==========================================
+    // 3. FIX: Buat Grouping Data Harian untuk Grafik
+    // ==========================================
+    const chartDataMap: Record<string, { label: string, total_orders: number, total_revenue: number }> = {};
+    let totalRevenue = 0;
+    let totalOrders = orders.length;
+
+    orders.forEach(order => {
+        // Gunakan getLocal untuk menghindari bug timezone UTC vs WIB
+        const year = order.created_at.getFullYear();
+        const month = String(order.created_at.getMonth() + 1).padStart(2, '0');
+        const day = String(order.created_at.getDate()).padStart(2, '0');
+        
+        const dateKey = `${year}-${month}-${day}`; // Kunci urutan: YYYY-MM-DD
+        const dayLabel = day; // Label untuk sumbu X di Frontend: "10", "11", dst
+
+        if (!chartDataMap[dateKey]) {
+            chartDataMap[dateKey] = { label: dayLabel, total_orders: 0, total_revenue: 0 };
+        }
+
+        // Tambah count pesanan harian
+        chartDataMap[dateKey].total_orders += 1;
+
+        // FIX: Hanya jumlahkan pendapatan jika status pesanan COMPLETED
+        if (order.status === 'COMPLETED') {
+            const amount = Number(order.grand_total_amount);
+            chartDataMap[dateKey].total_revenue += amount;
+            totalRevenue += amount; // Tambah ke summary master
+        }
+    });
+
+    // Ubah Object Map menjadi Array dan urutkan berdasarkan tanggal
+    const chartData = Object.keys(chartDataMap)
+        .sort()
+        .map(dateKey => chartDataMap[dateKey]);
+
+    // ==========================================
+    // 4. FIX: Top 5 Menu Sering Dipesan
+    // ==========================================
     const topMenusAgg = await prisma.order_items.groupBy({
         by: ['menu_id'],
-        where: { order: { created_at: { gte: start, lte: end } } },
+        where: { 
+            order: { 
+                created_at: { gte: start, lte: end },
+                status: 'COMPLETED' // Hanya menu dari pesanan sukses yang masuk Top 5
+            } 
+        },
         _sum: { quantity: true },
         orderBy: { _sum: { quantity: 'desc' } },
         take: 5
@@ -205,25 +260,36 @@ export const getDashboardStats = async (startDate?: string, endDate?: string) =>
 
     const menuDetails = await prisma.menus.findMany({
         where: { id: { in: topMenusAgg.map(m => m.menu_id!).filter(Boolean) } },
-        select: { id: true, name: true, price: true, category: true }
+        select: { id: true, name: true, price: true, category: true, image_path: true } // <--- FIX: Tambahkan image_path
     });
 
-    const topMenus = topMenusAgg.map(agg => {
+    const topMenus = topMenusAgg.map((agg, index) => {
         const detail = menuDetails.find(m => m.id === agg.menu_id);
+        
+        // Bentuk URL gambar agar bisa langsung dibaca elemen <img> Frontend
+        // Sesuaikan "/uploads/menus/" jika rute statis express kamu berbeda
+        const imageUrl = detail?.image_path ? `/uploads/menus/${detail.image_path}` : null;
+
         return {
+            rank: index + 1, // Berikan nomor urut untuk tabel Frontend
             menu_id: agg.menu_id,
             name: detail?.name,
-            price: detail?.price,
+            price: detail?.price ? Number(detail.price) : 0,
             category: detail?.category,
-            total_sold: agg._sum.quantity
+            image_url: imageUrl, // <--- Data gambar sudah siap pakai
+            total_sold: agg._sum.quantity || 0
         };
     });
 
+    // ==========================================
+    // 5. Kembalikan Response Terstruktur
+    // ==========================================
     return {
         summary: {
-            totalOrders: orders.length,
-            totalRevenue: orders.reduce((sum, order) => sum + Number(order.grand_total_amount), 0)
+            totalOrders,
+            totalRevenue
         },
+        chartData, // Array ini yang dipakai Frontend untuk menggambar 2 grafik
         topMenus
     };
 };
@@ -235,8 +301,17 @@ export const getReportService = async (type: string, reportCategory: string, sta
     let whereClause: any = {};
     const skip = (page - 1) * limit;
     
+    // =====================================
+    // FIX 1: Perbaikan Jam Batas Tanggal (Timezone Safe)
+    // =====================================
     if (type === 'daily' && startDate && endDate) {
-        whereClause.created_at = { gte: new Date(startDate), lte: new Date(endDate) };
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // Pastikan mengambil pesanan sampai penghujung hari
+        
+        whereClause.created_at = { gte: start, lte: end };
     } 
     else if (type === 'weekly' && month && year) {
         whereClause.created_at = { 
@@ -286,16 +361,17 @@ export const getReportService = async (type: string, reportCategory: string, sta
                 }
                 
                 groupedOrders[key].total_pesanan++;
-                if ((order.status as string) === 'COMPLETED' || (order.status as string) === 'DONE') {
+                // Mengakomodasi COMPLETED
+                if ((order.status as string) === 'COMPLETED') {
                     groupedOrders[key].pesanan_selesai++;
                 }
-                if ((order.status as string) === 'CANCELLED') {
+                // FIX 2: Typo CANCELLED (L-nya dua) diubah menjadi CANCELED (L-nya satu) sesuai enum database
+                if ((order.status as string) === 'CANCELED') {
                     groupedOrders[key].pesanan_cancel++;
                 }
             });
 
             const finalOrdersData = Object.values(groupedOrders);
-            
             const summaryOrders = finalOrdersData.reduce((acc, curr) => {
                 acc.total_semua += curr.total_pesanan;
                 acc.total_selesai += curr.pesanan_selesai;
@@ -307,8 +383,9 @@ export const getReportService = async (type: string, reportCategory: string, sta
         }
 
         case 'revenue': {
+            // FIX 3: Tambahkan status: 'COMPLETED' pada where clause agar hanya menghitung uang yang valid
             const rawRevenue = await prisma.orders.findMany({
-                where: whereClause,
+                where: { ...whereClause, status: 'COMPLETED' },
                 select: { grand_total_amount: true, created_at: true }
             });
 
@@ -326,7 +403,6 @@ export const getReportService = async (type: string, reportCategory: string, sta
             });
 
             const finalRevenueData = Object.values(groupedRevenue);
-            
             const summaryRevenue = finalRevenueData.reduce((acc, curr) => {
                 acc.total_semua_pesanan += curr.total_pesanan;
                 acc.grand_total_pendapatan += curr.total_pendapatan;
@@ -337,14 +413,34 @@ export const getReportService = async (type: string, reportCategory: string, sta
         }
 
         case 'menu': {
-            const menuReport = await prisma.order_items.groupBy({
+            // FIX 4: Filter hanya pesanan COMPLETED, lalu tarik nama, harga, kategori dari tabel Menu
+            const menuReportAgg = await prisma.order_items.groupBy({
                 by: ['menu_id'],
-                where: { order: whereClause },
+                where: { order: { ...whereClause, status: 'COMPLETED' } }, 
                 _sum: { quantity: true },
                 orderBy: { _sum: { quantity: 'desc' } },
                 skip, take: limit
             });
-            return { data: menuReport, meta: { page, limit } };
+
+            // Tarik detail menu berdasarkan ID yang didapat dari grouping
+            const menuDetails = await prisma.menus.findMany({
+                where: { id: { in: menuReportAgg.map(m => m.menu_id!).filter(Boolean) } },
+                select: { id: true, name: true, price: true, category: true }
+            });
+
+            // Format data agar persis dengan kolom tabel di Frontend
+            const finalMenuData = menuReportAgg.map((agg, index) => {
+                const detail = menuDetails.find(m => m.id === agg.menu_id);
+                return {
+                    no: skip + index + 1, // Penomoran tabel otomatis
+                    nama_menu: detail?.name || "Menu Dihapus",
+                    harga: detail?.price ? Number(detail.price) : 0,
+                    kategori: detail?.category || "-",
+                    total: agg._sum.quantity || 0
+                };
+            });
+
+            return { data: finalMenuData, meta: { page, limit } };
         }
 
         default: {

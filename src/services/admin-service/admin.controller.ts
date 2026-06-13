@@ -96,22 +96,45 @@ export const updateStaffPasswordController = asyncHandler(async (req: Request, r
 
 // CONTROLLER DASHBOARD & LAPORAN (REPORTS)
 export const getDashboardController = asyncHandler(async (req: Request, res: Response) => {
-    const { startDate, endDate } = req.query as any;
+    // 1. Ekstrak dengan tipe data yang lebih aman (hindari 'any')
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+
+    // 2. Panggil service
     const stats = await getDashboardStats(startDate, endDate);
     
-    res.status(200).json({
-        success: true,
-        message: "Berhasil mengambil data dashboard",
-        data: stats
-    });
+    // 3. Gunakan utility responseSuccess agar formatnya konsisten dengan modul lain
+    return responseSuccess(res, "Berhasil mengambil data dashboard", stats, 200);
 });
 
-// Seluruh blok getReportController sudah diaktifkan kembali!
 export const getReportController = asyncHandler(async (req: Request, res: Response) => {
-    const { type, reportCategory, startDate, endDate, months, year, month, page, limit } = req.query as any;
+    // 1. Tangkap semua parameter dengan tipe yang jelas
+    const type = req.query.type as string;
+    const reportCategory = req.query.reportCategory as string;
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+    const year = req.query.year as string | undefined;
     
-    const monthArray = months ? (Array.isArray(months) ? months.map(Number) : [Number(months)]) : undefined;
+    // Parsing manual untuk parameter angka dan array
+    const month = req.query.month ? Number(req.query.month) : undefined;
+    const page = req.query.page ? Number(req.query.page) : 1;
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
     
+    // Parsing khusus untuk months (bisa dikirim frontend sebagai array ?months=1&months=2)
+    let monthArray: number[] | undefined = undefined;
+    if (req.query.months) {
+        if (Array.isArray(req.query.months)) {
+            monthArray = req.query.months.map(Number);
+        } else {
+            monthArray = [Number(req.query.months)];
+        }
+
+        if (monthArray.some(isNaN)) {
+            throw new AppError("Format parameter bulan tidak valid. Harus berupa angka.", 400);
+        }
+    }
+    
+    // 2. Eksekusi service
     const reportData = await getReportService(
         type, 
         reportCategory || 'all', 
@@ -119,14 +142,15 @@ export const getReportController = asyncHandler(async (req: Request, res: Respon
         endDate, 
         monthArray, 
         year,
-        month ? Number(month) : undefined,   
-        page ? Number(page) : 1,             
-        limit ? Number(limit) : 10           
+        month,   
+        page,            
+        limit            
     );
     
+    // 3. Kembalikan response
     res.status(200).json({
         success: true,
         message: `Berhasil mengambil data laporan ${type || 'umum'}`,
-        ...reportData 
+        ...reportData // reportData sudah berisi objek { data: [], summary: {} }
     });
 });
